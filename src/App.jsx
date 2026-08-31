@@ -115,16 +115,17 @@ function MenuIcon() {
 }
 
 function Brand() {
+  const logoImage = `${import.meta.env.BASE_URL}assets/tsk-fort-logo.png`;
+
   return (
     <a className="brand" href="#top" aria-label="ТСК ФОРТ — на главную">
-      <span className="brand__mark" aria-hidden="true">
-        <span>Т</span>
-        <span>Ф</span>
-      </span>
-      <span className="brand__text">
-        <strong>ТСК ФОРТ</strong>
-        <small>строительная компания</small>
-      </span>
+      <img
+        className="brand__logo"
+        src={logoImage}
+        alt=""
+        width="576"
+        height="344"
+      />
     </a>
   );
 }

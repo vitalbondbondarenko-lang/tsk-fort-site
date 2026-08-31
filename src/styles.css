@@ -125,51 +125,13 @@ button {
   display: inline-flex;
   align-items: center;
   width: fit-content;
-  gap: 13px;
+  line-height: 0;
 }
 
-.brand__mark {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  width: 42px;
-  height: 42px;
-  overflow: hidden;
-  border: 1px solid currentColor;
-}
-
-.brand__mark span {
-  display: grid;
-  place-items: center;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.brand__mark span:first-child {
-  color: var(--white);
-  background: var(--ink);
-}
-
-.brand__mark span:last-child {
-  color: var(--white);
-  background: var(--accent);
-}
-
-.brand__text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.brand__text strong {
-  font-size: 17px;
-  letter-spacing: 0.04em;
-}
-
-.brand__text small {
-  color: var(--muted);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+.brand__logo {
+  display: block;
+  width: 132px;
+  height: auto;
 }
 
 .desktop-nav {
@@ -1482,8 +1444,10 @@ button {
   background: var(--ink);
 }
 
-.site-footer .brand__text small {
-  color: var(--muted-light);
+.site-footer .brand__logo {
+  width: 190px;
+  filter: brightness(0) invert(1);
+  opacity: 0.94;
 }
 
 .site-footer__top {
@@ -1864,8 +1828,8 @@ button {
     scroll-padding-top: 78px;
   }
 
-  .brand__text small {
-    display: none;
+  .brand__logo {
+    width: 108px;
   }
 
   .hero {
