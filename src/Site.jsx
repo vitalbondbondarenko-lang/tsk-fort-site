@@ -95,13 +95,6 @@ function Header({ path }) {
   }, [open]);
   return (
     <header className="site-header">
-      <div className="header-top container">
-        <span>Строительная компания · Тюмень</span>
-        <div>
-          <Link to="/documents/">Документы и реквизиты</Link>
-          <a href={`mailto:${company.email}`}>{company.email}</a>
-        </div>
-      </div>
       <div className="header-main container">
         <Brand />
         <nav className="desktop-nav" aria-label="Основная навигация">
@@ -177,13 +170,13 @@ function Footer() {
           <p>
             Генеральный подряд.
             <br />
-            Капитальный ремонт.
+            От проекта
             <br />
-            Проектирование.
+            до сдачи объекта.
           </p>
         </div>
         <div>
-          <h2>Направления</h2>
+          <h2>Генподряд и состав работ</h2>
           {services.map((s) => (
             <Link key={s.slug} to={`/${s.slug}/`}>
               {s.title}
@@ -269,10 +262,10 @@ function ProjectCard({ item }) {
     <Link className="project-card" to={`/projects/${item.slug}/`}>
       <div className="project-image">
         <img
-          src={asset(`models/${item.model}.jpg`)}
+          src={asset(`models/${item.model}.jpg?v=engineering-20260906`)}
           alt={`Архитектурная концепция: ${item.title.toLowerCase()}`}
-          width="1400"
-          height="1100"
+          width="1600"
+          height="1200"
           loading="lazy"
         />
         <span className="project-badge">3D-концепция</span>
@@ -351,6 +344,54 @@ function Workflow({ short = false }) {
     </ol>
   );
 }
+function ContractScope() {
+  const scope = [
+    [
+      "01",
+      "Подготовка и проектирование",
+      "Исходные данные, проектные решения, объёмы и смета. Увязываем архитектуру, конструкции и инженерные системы.",
+      "/design/",
+    ],
+    [
+      "02",
+      "Строительство",
+      "Организация площадки, общестроительные и специальные работы. Координация подрядчиков, ресурсов и поставок.",
+      "/construction/",
+    ],
+    [
+      "03",
+      "Сопровождение и контроль",
+      "График, ПТО, контроль качества, согласование изменений и исполнительная документация на протяжении работ.",
+      "/support/",
+    ],
+    [
+      "04",
+      "Передача результата",
+      "Предъявление выполненных работ, закрытие замечаний и передача согласованного комплекта документов заказчику.",
+      "/approach/",
+    ],
+  ];
+  return (
+    <ol className="contract-scope">
+      {scope.map(([number, title, text, to]) => (
+        <li key={number}>
+          <span className="scope-index">{number}</span>
+          <h3>
+            <Link to={to}>{title}</Link>
+          </h3>
+          <p>{text}</p>
+          <Link
+            to={to}
+            className="scope-more"
+            aria-label={title + " — подробнее"}
+          >
+            <Arrow diagonal />
+          </Link>
+        </li>
+      ))}
+    </ol>
+  );
+}
 function Home() {
   return (
     <>
@@ -359,144 +400,122 @@ function Home() {
           <div className="hero-copy">
             <p className="eyebrow">
               <span className="status-dot" />
-              Генподряд и проектирование
+              ТСК ФОРТ · Тюмень
             </p>
             <h1>
-              Строим на
+              Генеральный
               <br />
-              <em>точных</em>
-              <br />
-              решениях.
+              подряд
             </h1>
+            <p className="hero-thesis">
+              От проекта
+              <br />
+              до сдачи объекта.
+            </p>
             <p className="hero-lead">
-              От проектной идеи до строительной площадки. Организуем
-              строительство и капитальный ремонт с понятной ответственностью за
-              каждый этап.
+              Проектируем, строим и сопровождаем объект как единый процесс.
+              Организуем людей, работы и документы — от исходных данных до
+              передачи результата.
             </p>
             <div className="hero-actions">
               <ButtonLink />
-              <Link to="/design/" className="text-link">
-                Проектирование
-                <Arrow diagonal />
-              </Link>
+              <ButtonLink to="/general-contracting/" secondary>
+                Что входит в генподряд
+              </ButtonLink>
+            </div>
+            <div className="hero-tags">
+              <span>Проектирование</span>
+              <span>Строительство</span>
+              <span>Сопровождение</span>
             </div>
           </div>
-          <div className="hero-model">
-            <div className="model-topline">
-              <span>Архитектура в деталях</span>
-              <span>Жилая среда / 3D</span>
-            </div>
-            <ModelViewer model="apartment" compact />
-            <div className="hero-model-footer">
-              <span>Жилой квартал</span>
-              <Link to="/projects/residential/">
-                Исследовать концепцию
-                <Arrow diagonal />
-              </Link>
-            </div>
-          </div>
+          <figure className="hero-visual">
+            <img
+              src={asset("assets/hero-construction-concept.jpg")}
+              width="1536"
+              height="1024"
+              fetchPriority="high"
+              alt="Иллюстрация: инженеры с проектными чертежами на строительной площадке"
+            />
+            <figcaption>
+              <span>Организация полного цикла</span>
+              <span>Визуальная концепция</span>
+            </figcaption>
+          </figure>
         </div>
         <div className="container hero-bottom">
-          <span>Проектируем. Организуем. Строим.</span>
-          <div>
-            <span>Жилые здания</span>
-            <span>Общественные объекты</span>
-            <span>Инженерная инфраструктура</span>
-          </div>
-          <a href="#directions" aria-label="К направлениям работы">
-            ↓
-          </a>
+          <span>Один генподрядчик. Согласованные этапы.</span>
+          <Link to="/general-contracting/" className="text-link">
+            Наш подход к генподряду
+            <Arrow />
+          </Link>
         </div>
       </section>
       <section className="section container" id="directions">
         <Heading
-          label="Направления работы"
+          label="Генеральный подряд"
           title={
             <>
-              Одна задача.
-              <br />
-              Связанные решения.
+              Весь процесс.
+              <br />В одной системе.
             </>
           }
-          text="Проект, производство и инженерия работают на общий результат. Выберите комплекс услуг, который нужен вашему объекту."
-          link={["Наш подход", "/approach/"]}
+          text="Для заказчика это единая организация работ: от проектной подготовки до сдачи. Состав участия и границы ответственности закрепляем в договоре."
+          link={["Подробнее о генподряде", "/general-contracting/"]}
         />
-        <div className="service-grid">
-          {services.slice(0, 3).map((s, i) => (
-            <Link
-              className={`service-card service-card-${i}`}
-              to={`/${s.slug}/`}
-              key={s.slug}
-            >
-              <div className="service-graphic" aria-hidden="true">
-                <svg viewBox="0 0 220 145">
-                  <path
-                    d={
-                      i === 0
-                        ? "M30 125V40l55-26 110 34v77H30Zm55-111v111m-55-85 110 36 55-28M140 76v49M44 53v14m16-9v14m39-23v13m17-7v13m43 0v14m17-18v14M44 83v14m16-9v14m39-23v13m17-7v13m43 0v14m17-18v14"
-                        : i === 1
-                          ? "M35 125V28h120v97H35Zm120-72h32v72h-32M50 43h26v28H50V43Zm45 0h44v28H95V43ZM50 89h26v36m19 0V89h44v36M15 127h195M20 21h145"
-                          : "m110 12 88 48-88 51-88-51 88-48ZM22 80l88 50 88-50M22 99l88 43 88-43M66 36l88 49m0-49L66 85M110 12v99"
-                    }
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.3"
-                  />
-                </svg>
-              </div>
-              <span className="eyebrow">{s.label}</span>
-              <h3>{s.title}</h3>
-              <p>{s.lead}</p>
-              <span className="service-card-link">
-                Подробнее
-                <Arrow diagonal />
-              </span>
-            </Link>
-          ))}
-        </div>
-        <div className="secondary-services">
-          {services.slice(3).map((s) => (
-            <Link key={s.slug} to={`/${s.slug}/`}>
-              {s.title}
-              <Arrow diagonal />
-            </Link>
-          ))}
+        <ContractScope />
+        <div className="work-composition">
+          <p className="eyebrow">В составе строительных работ</p>
+          <div>
+            {services
+              .filter((s) =>
+                [
+                  "capital-repair",
+                  "facades",
+                  "roofing",
+                  "engineering",
+                ].includes(s.slug),
+              )
+              .map((s) => (
+                <Link key={s.slug} to={"/" + s.slug + "/"}>
+                  {s.title}
+                  <Arrow diagonal />
+                </Link>
+              ))}
+          </div>
         </div>
       </section>
       <section className="dark-section">
         <div className="container section">
           <Heading
             dark
-            label="Организация строительства"
+            label="Управление объектом"
             title={
               <>
-                Сложный объект.
+                Проект. Площадка.
                 <br />
-                Понятное управление.
+                Контроль.
               </>
             }
-            text="Управляем связями между проектом, людьми, материалами и сроками. Заказчик видит состояние объекта и решения, которые необходимо принять."
-            link={["Как мы работаем", "/approach/"]}
+            text="Генподряд связывает решения проектировщиков, работу подрядчиков и требования заказчика. На каждом этапе — понятный объём, ответственный участник и контрольная точка."
+            link={["Организация работ", "/approach/"]}
           />
           <div className="control-grid">
             {[
               [
-                "Проект и объёмы",
-                "Определяем состав задачи, проверяем комплектность исходных данных и согласуем границы работ.",
+                "До начала работ",
+                "Уточняем исходные данные, состав проекта, бюджет и последовательность строительства.",
               ],
               [
-                "График и производство",
-                "Планируем последовательность, ресурсы и поставки под реальный фронт работ.",
+                "На площадке",
+                "Координируем подрядчиков и поставки, контролируем объёмы, сроки и качество.",
               ],
               [
-                "Качество и документы",
-                "Фиксируем контрольные точки, скрытые работы и комплект документов к передаче.",
+                "При передаче",
+                "Предъявляем результат, закрываем замечания и комплектуем исполнительную документацию.",
               ],
-            ].map(([h, p], i) => (
+            ].map(([h, p]) => (
               <div className="control-item" key={h}>
-                <span className="control-symbol" aria-hidden="true">
-                  {["⌑", "↗", "✓"][i]}
-                </span>
                 <h3>{h}</h3>
                 <p>{p}</p>
               </div>
@@ -504,12 +523,17 @@ function Home() {
           </div>
         </div>
       </section>
-      <section className="section container">
+      <section className="section container engineering-preview">
         <Heading
-          label="Архитектурная коллекция"
-          title="Рассмотрите идею со всех сторон"
-          text="Три оригинальные концепции зданий. Вращайте объём, приближайте фасады и переключайтесь в конструктивный режим."
-          link={["Все 3D-концепции", "/projects/"]}
+          label="Проектирование в составе генподряда"
+          title={
+            <>
+              От проектного решения
+              <br />к конструкции.
+            </>
+          }
+          text="Архитектура, несущая система и инженерные решения рассматриваются вместе. Трёхмерная модель помогает читать их взаимосвязь."
+          link={["Проектирование и 3D", "/design/"]}
         />
         <div className="project-grid">
           {concepts.map((c) => (
@@ -517,32 +541,23 @@ function Home() {
           ))}
         </div>
         <p className="caption">
-          Представленные макеты — архитектурные концепции, созданные для
-          демонстрации пространственных решений.
+          Демонстрационные архитектурно-конструктивные модели. Не являются
+          рабочей документацией или перечнем построенных ТСК ФОРТ объектов.
         </p>
       </section>
       <section className="section section-muted">
         <div className="container">
           <Heading
-            label="Путь к результату"
-            title="От первого разговора до передачи работ"
+            label="Этапы взаимодействия"
+            title="От задачи к выполненным работам"
           />
           <Workflow short />
         </div>
       </section>
-      <section className="section container">
-        <Heading
-          label="Журнал ТСК ФОРТ"
-          title="Понимать стройку — управлять результатом"
-          link={["Все материалы", "/journal/"]}
-        />
-        <div className="article-grid">
-          {articles.map((a) => (
-            <ArticleCard key={a.slug} article={a} />
-          ))}
-        </div>
-      </section>
-      <CTA />
+      <CTA
+        title="Обсудим ваш объект"
+        text="Пришлите проект, техническое задание или описание задачи. Определим состав генподрядных работ и исходные данные для расчёта."
+      />
     </>
   );
 }
@@ -591,10 +606,20 @@ function ConceptSwitcher() {
 }
 function ServicePage({ service }) {
   const isDesign = service.slug === "design";
+  const isGeneral = service.slug === "general-contracting";
   return (
     <>
       <section className="page-hero container">
-        <Breadcrumbs items={[[service.title]]} />
+        <Breadcrumbs
+          items={
+            isGeneral
+              ? [[service.title]]
+              : [
+                  ["Генеральный подряд", "/general-contracting/"],
+                  [service.title],
+                ]
+          }
+        />
         <div className="page-hero-grid">
           <div>
             <p className="eyebrow">{service.label}</p>
@@ -613,19 +638,28 @@ function ServicePage({ service }) {
           </div>
         </div>
       </section>
-      {isDesign ? (
+      {isGeneral ? (
+        <section className="container general-scope" id="scope">
+          <Heading
+            label="Единая организация работ"
+            title="Что входит в генподряд"
+          />
+          <ContractScope />
+        </section>
+      ) : isDesign ? (
         <section className="design-studio container">
           <div className="studio-heading">
             <div>
-              <p className="eyebrow">Интерактивная архитектура</p>
+              <p className="eyebrow">Архитектура и конструкции</p>
               <h2>
-                Проект начинается
-                <br />с объёмного видения
+                Чёткая геометрия.
+                <br />
+                Связанные решения.
               </h2>
             </div>
             <p>
-              Исследуйте наши демонстрационные модели: пропорции здания,
-              фасадные решения и организацию территории.
+              Рассмотрите перекрытия, колонны, лестничные узлы и фасадные
+              элементы. Переключайте виды и состав модели.
             </p>
           </div>
           <ConceptSwitcher />
@@ -633,10 +667,10 @@ function ServicePage({ service }) {
       ) : (
         <section className="service-feature container">
           <img
-            width="1400"
-            height="1100"
-            src={asset(`models/${service.model}.jpg`)}
-            alt={`Архитектурный макет для направления «${service.title}»`}
+            width="1600"
+            height="1200"
+            src={asset(`models/${service.model}.jpg?v=engineering-20260906`)}
+            alt={`Архитектурно-конструктивная модель для направления «${service.title}»`}
           />
           <div className="service-feature-note">
             <span className="eyebrow">В центре внимания</span>
@@ -697,11 +731,14 @@ function ServicePage({ service }) {
       </section>
       <FAQ questions={service.questions} />
       <section className="container related-services">
-        <span className="eyebrow">Связанные направления</span>
+        <span className="eyebrow">Другие составляющие генподряда</span>
         <div>
           {services
-            .filter((s) => s.slug !== service.slug)
-            .slice(0, 3)
+            .filter(
+              (s) =>
+                ["construction", "design", "support"].includes(s.slug) &&
+                s.slug !== service.slug,
+            )
             .map((s) => (
               <Link key={s.slug} to={`/${s.slug}/`}>
                 {s.title}
@@ -726,15 +763,15 @@ function ProjectsPage() {
     <>
       <section className="page-hero container">
         <Breadcrumbs items={[["Проекты"]]} />
-        <p className="eyebrow">Архитектура и пространственные решения</p>
+        <p className="eyebrow">Проектирование в составе генподряда</p>
         <h1>
-          Идеи, которые
+          Архитектура
           <br />
-          <em>обретают объём.</em>
+          <em>и конструкции.</em>
         </h1>
         <p className="page-lead">
-          Коллекция интерактивных архитектурных концепций. Жильё, образование и
-          медицина — три разных задачи, три подробных макета.
+          Три типа зданий в инженерной аксонометрии. Перекрытия, колонны,
+          лестничные узлы и фасады — в единой объёмной модели.
         </p>
       </section>
       <section className="container projects-catalog">
@@ -769,9 +806,9 @@ function ProjectsPage() {
       </section>
       <section className="section container">
         <Heading
-          label="Реальная задача — индивидуальное решение"
-          title="От концепции к вашему объекту"
-          text="Визуальная идея становится проектом после уточнения участка, требований заказчика, исходных данных и состава документации."
+          label="Проектная подготовка"
+          title="От исходных данных к проекту"
+          text="Состав проектных решений определяется участком, заданием заказчика, исходными данными и согласованным объёмом документации."
           link={["О проектировании", "/design/"]}
         />
       </section>
@@ -795,8 +832,8 @@ function ProjectPage({ item }) {
       <section className="container">
         <ModelViewer model={item.model} />
         <p className="caption">
-          Оригинальный демонстрационный макет. Не является рабочим проектом или
-          сведениями о выполненном объекте.
+          Демонстрационная архитектурно-конструктивная модель. Не является
+          рабочим проектом или сведениями о выполненном объекте.
         </p>
       </section>
       <section className="section container project-story">
@@ -848,8 +885,9 @@ function About() {
           <em>за целое.</em>
         </h1>
         <p className="page-lead">
-          ТСК ФОРТ — строительная компания из Тюмени. Генеральный подряд,
-          капитальный ремонт и проектирование составляют основу нашей работы.
+          ТСК ФОРТ — генподрядная строительная компания из Тюмени.
+          Проектирование, строительство и сопровождение объекта объединены в
+          один процесс с согласованными этапами и ответственностью.
         </p>
       </section>
       <section className="about-band">
@@ -872,12 +910,12 @@ function About() {
         <div className="about-columns">
           {[
             [
-              "Строительство и генподряд",
+              "Строительство",
               "Планирование этапов, организация площадки, координация участников и комплектование исполнительной документации.",
             ],
             [
-              "Капитальный ремонт",
-              "Фасады и кровли многоквартирных домов, инженерные системы и комплексные работы на существующих зданиях.",
+              "Сопровождение",
+              "ПТО, контроль качества, согласование изменений и исполнительная документация в составе генподрядных работ.",
             ],
             [
               "Проектные решения",
@@ -1443,7 +1481,9 @@ export default function Site({ initialPath }) {
       history.pushState({}, "", url);
       setPath(currentPath());
       window.scrollTo({ top: 0, behavior: "instant" });
-      requestAnimationFrame(() => document.getElementById('main-content')?.focus({ preventScroll: true }));
+      requestAnimationFrame(() =>
+        document.getElementById("main-content")?.focus({ preventScroll: true }),
+      );
     }
     function pop() {
       setPath(currentPath());

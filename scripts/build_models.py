@@ -1,13 +1,12 @@
-"""Original architectural demonstration models for the TSK FORT website.
+"""Original engineering presentation models, Blender 5.2.1.
 
-Run with Blender 5.2: blender --background --python scripts/build_models.py
-These are authored concepts, not completed company projects or construction documents.
+Reproducible architectural concepts, not as-built BIM or working documentation.
+Blender --background --python scripts/build_models.py [-- apartment school hospital]
 """
 import bpy
+import json
 import math
 import os
-import json
-import random
 import sys
 from collections import defaultdict
 from mathutils import Vector
@@ -20,67 +19,68 @@ os.makedirs(SOURCE, exist_ok=True)
 
 
 def linear(v):
-    return v / 12.92 if v < 0.04045 else ((v + .055) / 1.055) ** 2.4
+    return v / 12.92 if v < .04045 else ((v + .055) / 1.055) ** 2.4
 
 
-def material(name, hexcode, rough=.65, metal=0):
-    rgb = tuple(linear(int(hexcode[i:i+2], 16) / 255) for i in (0, 2, 4))
-    m = bpy.data.materials.new(name)
-    m.diffuse_color = (*rgb, 1)
-    m.use_nodes = True
-    bs = m.node_tree.nodes.get("Principled BSDF")
-    bs.inputs["Base Color"].default_value = (*rgb, 1)
-    bs.inputs["Roughness"].default_value = rough
-    bs.inputs["Metallic"].default_value = metal
-    return m
+def material(name, colour, roughness=.72, metallic=0):
+    rgb = tuple(linear(int(colour[i:i+2], 16)/255) for i in (0,2,4))
+    mat = bpy.data.materials.new(name)
+    mat.diffuse_color = (*rgb,1)
+    mat.use_nodes = True
+    shader = mat.node_tree.nodes.get("Principled BSDF")
+    shader.inputs["Base Color"].default_value = (*rgb,1)
+    shader.inputs["Roughness"].default_value = roughness
+    shader.inputs["Metallic"].default_value = metallic
+    return mat
 
 
-class Meshes:
+PALETTE = {
+    "Concrete": ("C5C7C4",.83,0),
+    "ConcreteCut": ("ADB2B1",.87,0),
+    "White": ("ECECE8",.65,0),
+    "Graphite": ("494F52",.55,.10),
+    "Steel": ("777E80",.42,.40),
+    "Glass": ("929FA2",.19,.27),
+    "GlassDark": ("637276",.22,.25),
+    "Roof": ("929795",.91,0),
+    "Interior": ("DEDFDC",.85,0),
+}
+
+
+class Geometry:
     def __init__(self):
-        self.data = defaultdict(lambda: [[], []])
+        self.groups = defaultdict(lambda: [[],[]])
 
     def mesh(self, group, mat, verts, faces):
-        v, f = self.data[(group, mat)]
-        offset = len(v)
-        v.extend(verts)
-        f.extend(tuple(i+offset for i in face) for face in faces)
+        vv,ff = self.groups[(group,mat)]
+        offset=len(vv)
+        vv.extend(verts)
+        ff.extend(tuple(i+offset for i in f) for f in faces)
 
-    def box(self, name, mat, x, y, z, w, d, h):
-        if min(w, d, h) <= 0:
+    def box(self, group, mat, x,y,z,w,d,h):
+        if min(w,d,h)<=0:
             return
-        x0, x1, y0, y1, z0, z1 = x-w/2, x+w/2, y-d/2, y+d/2, z, z+h
-        self.mesh(name, mat, [(x0,y0,z0),(x1,y0,z0),(x1,y1,z0),(x0,y1,z0),
-                              (x0,y0,z1),(x1,y0,z1),(x1,y1,z1),(x0,y1,z1)],
+        xa,xb,ya,yb,za,zb=x-w/2,x+w/2,y-d/2,y+d/2,z,z+h
+        self.mesh(group,mat,[(xa,ya,za),(xb,ya,za),(xb,yb,za),(xa,yb,za),
+                             (xa,ya,zb),(xb,ya,zb),(xb,yb,zb),(xa,yb,zb)],
                   [(0,3,2,1),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)])
 
-    def cylinder(self, name, mat, x, y, z, r, h, sides=10, rtop=None):
-        rt = r if rtop is None else rtop
-        verts = [(x+rr*math.cos(2*math.pi*i/sides),y+rr*math.sin(2*math.pi*i/sides),zz)
-                 for zz,rr in ((z,r),(z+h,rt)) for i in range(sides)]
-        faces = [tuple(reversed(range(sides))), tuple(range(sides,2*sides))]
-        faces += [(i,(i+1)%sides,(i+1)%sides+sides,i+sides) for i in range(sides)]
-        self.mesh(name,mat,verts,faces)
+    def beam(self, group, mat, start,end,width,depth=None):
+        """Rectangular prism between two world-space points, for roof trusses."""
+        a,b=Vector(start),Vector(end)
+        direction=(b-a).normalized()
+        ref=Vector((0,0,1)) if abs(direction.z)<.98 else Vector((0,1,0))
+        u=direction.cross(ref).normalized()*(width/2)
+        v=direction.cross(u).normalized()*((depth or width)/2)
+        verts=[tuple(p+du*u+dv*v) for p in [a,b] for du,dv in [(-1,-1),(1,-1),(1,1),(-1,1)]]
+        self.mesh(group,mat,verts,[(0,3,2,1),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)])
 
-    def sphere(self, name, mat, x,y,z, rx,ry,rz, seed=0):
-        random.seed(seed)
-        sides, rings = 12, 6
-        verts = []
-        for j in range(rings+1):
-            a = math.pi*j/rings
-            for i in range(sides):
-                b = math.tau*i/sides
-                jitter = 1 + random.uniform(-.08,.08)
-                verts.append((x+rx*math.sin(a)*math.cos(b)*jitter,
-                              y+ry*math.sin(a)*math.sin(b)*jitter,z+rz*math.cos(a)*jitter))
-        faces = [((j+1)*sides+i,(j+1)*sides+(i+1)%sides,j*sides+(i+1)%sides,j*sides+i)
-                 for j in range(rings) for i in range(sides)]
-        self.mesh(name,mat,verts,faces)
-
-    def finish(self, mats):
+    def finish(self):
+        mats={k:material(k,*v) for k,v in PALETTE.items()}
         objects=[]
-        for (group,mat), (verts,faces) in self.data.items():
+        for (group,mat),(verts,faces) in self.groups.items():
             mesh=bpy.data.meshes.new(group+"_"+mat)
-            mesh.from_pydata(verts, [], faces)
+            mesh.from_pydata(verts,[],faces)
             mesh.update()
             obj=bpy.data.objects.new(group+"_"+mat,mesh)
             bpy.context.collection.objects.link(obj)
@@ -89,426 +89,378 @@ class Meshes:
         return objects
 
 
-def materials():
-    return {k:material(k,c,r,m) for k,c,r,m in [
-        ("Ivory","E3E1D7",.78,0),("White","F7F5EF",.6,0),
-        ("Concrete","B9BDBB",.85,0),("Dark","304653",.7,0),
-        ("Glass","567B91",.24,.24),("GlassLight","A4BBC4",.26,.2),
-        ("Brick","A96547",.9,0),("BrickDark","754D3E",.9,0),
-        ("Teal","427C7F",.65,0),("Ochre","C6A765",.75,0),
-        ("Roof","65757A",.85,0),("Metal","697F88",.35,.55),
-        ("Asphalt","667476",.95,0),("Paving","D4D5CC",.9,0),
-        ("Grass","9BAC85",1,0),("Green","638463",1,0),
-        ("GreenLight","90A077",1,0),("GreenDark","486B56",1,0),
-        ("Wood","9B7851",.9,0),("Rubber","344044",.9,0),
-        ("CarLight","ECE7DA",.35,.2),("CarBlue","506C7A",.35,.2),
-        ("Sport","819994",.9,0),("Court","C4977E",.95,0),
-        ("Line","EFEFE2",.8,0),("Red","BC6855",.75,0)]}
+def slab_with_hole(g,cx,cy,w,d,z,thickness=.24,hole=None,group="Structure_FloorSlabs"):
+    if not hole:
+        g.box(group,"Concrete",cx,cy,z,w,d,thickness)
+        return
+    hx,hy,hw,hd=hole
+    xl,xr,yl,yr=cx-w/2,cx+w/2,cy-d/2,cy+d/2
+    hl,hr,hb,ht=hx-hw/2,hx+hw/2,hy-hd/2,hy+hd/2
+    g.box(group,"Concrete",(xl+hl)/2,cy,z,hl-xl,d,thickness)
+    g.box(group,"Concrete",(hr+xr)/2,cy,z,xr-hr,d,thickness)
+    g.box(group,"Concrete",hx,(yl+hb)/2,z,hw,hb-yl,thickness)
+    g.box(group,"Concrete",hx,(ht+yr)/2,z,hw,yr-ht,thickness)
 
 
-def tree(g,x,y,size=1,index=0):
-    z=.4
-    g.cylinder("Landscape_Trees","Wood",x,y,z,.16*size,2.9*size,8,.11*size)
-    for dx,dy,dz,s,mat in [(-.55,0,3.8,1.65,"Green"),(.7,.35,4.2,1.45,"GreenLight"),(0,-.25,5.1,1.25,"Green")]:
-        g.sphere("Landscape_Trees",mat,x+dx*size,y+dy*size,z+dz*size,s*size,s*size,1.5*s*size,index+int(dz*100))
-    g.box("Landscape_Planting","Wood",x,y,.34,2.7*size,2.7*size,.08)
-    g.box("Landscape_Planting","GreenDark",x,y,.43,2.5*size,2.5*size,.12)
+def stair_core(g,cx,cy,levels,fh,base=.6,width=3.8,depth=5.7):
+    """Open structural core: actual stair flights and landings are visible."""
+    top=levels*fh
+    # Back and one shear wall remain; the viewer-facing wall is cut away.
+    g.box("Structure_ShearWalls","ConcreteCut",cx,cy+depth/2,base,width+.25,.25,top)
+    g.box("Structure_ShearWalls","ConcreteCut",cx-width/2,cy,base,.25,depth,top)
+    g.box("Structure_CorePiers","ConcreteCut",cx+width/2,cy+depth/2-.4,base,.25,.8,top)
+    run=3.5
+    steps=10
+    tread=run/steps
+    riser=fh/(2*steps)
+    for f in range(levels):
+        z=base+f*fh+.24
+        for i in range(steps):
+            y=cy-run/2+(i+.5)*tread
+            g.box("Structure_StairFlights","Concrete",cx-.85,y,z+i*riser,1.45,tread,.18)
+            g.box("Structure_StairRisers","Concrete",cx-.85,y-tread/2,z+i*riser,1.45,.04,riser+.04)
+            y=cy+run/2-(i+.5)*tread
+            g.box("Structure_StairFlights","Concrete",cx+.85,y,z+fh/2+i*riser,1.45,tread,.18)
+            g.box("Structure_StairRisers","Concrete",cx+.85,y+tread/2,z+fh/2+i*riser,1.45,.04,riser+.04)
+        g.box("Structure_StairLandings","Concrete",cx,cy+2.1,z+fh/2,3.2,.75,.20)
+        g.box("Structure_StairLandings","Concrete",cx,cy-2.1,z+fh-.05,3.2,.75,.20)
+        # Light metal balustrades deliberately use sparse, structural lines.
+        for s in [-1,1]:
+            xx=cx+s*.13
+            a=(xx,cy-run/2,z+.95+(fh/2 if s>0 else 0))
+            b=(xx,cy+run/2,z+.95+(0 if s>0 else fh/2))
+            g.beam("Structure_StairRails","Steel",a,b,.035)
+        for yy,zz in [(cy-1.6,z),(cy+1.6,z+fh/2)]:
+            g.box("Structure_StairRails","Steel",cx,yy,zz+.3,.035,.035,.72)
 
 
-def bench(g,x,y,along_x=True):
-    w,d=(2.1,.58) if along_x else (.58,2.1)
-    g.box("Landscape_Furniture","Wood",x,y,.88,w,d,.13)
-    g.box("Landscape_Furniture","Wood",x,y+(d/2 if along_x else 0),1.01,w,.11 if along_x else d,.58)
-    for off in [-.8,.8]:
-        g.box("Landscape_Furniture","Metal",x+off if along_x else x,y if along_x else y+off,.4,.12,.45,.48)
-
-
-def lamp(g,x,y):
-    g.cylinder("Landscape_Lighting","Metal",x,y,.4,.065,4.2,8)
-    g.box("Landscape_Lighting","Metal",x+.33,y,4.54,.8,.13,.1)
-    g.box("Landscape_Lighting","White",x+.54,y,4.51,.5,.18,.06)
-
-
-def car(g,x,y,mat="CarLight",ambulance=False):
-    w,d=1.8,4.25 if not ambulance else 5.1
-    g.box("Landscape_Vehicles",mat,x,y,.62,w,d,.75)
-    g.box("Landscape_Vehicles",mat,x,y+.18,1.26,w-.14,d*.56,.57 if not ambulance else 1.35)
-    g.box("Landscape_Vehicles","Glass",x,y-1.05,1.33,w-.32,.07,.45)
-    g.box("Landscape_Vehicles","Glass",x,y+1.15,1.33,w-.32,.07,.4)
-    for s in [-1,1]:
-        g.box("Landscape_Vehicles","Glass",x+s*(w/2-.055),y+.14,1.35,.035,2.05,.39)
-        for yy in [-1.2,1.2]:
-            g.box("Landscape_Vehicles","Rubber",x+s*.88,y+yy,.48,.24,.68,.65)
-            g.box("Landscape_Vehicles","Metal",x+s*1.01,y+yy,.64,.03,.33,.31)
-        g.box("Landscape_Vehicles","White",x+s*.59,y-d/2-.02,.94,.38,.04,.17)
-        g.box("Landscape_Vehicles","Red",x+s*.59,y+d/2+.02,.94,.38,.04,.15)
-    if ambulance:
-        g.box("Landscape_Vehicles","Teal",x,y+.35,2.61,.9,.32,.18)
-        g.box("Landscape_Vehicles","Teal",x-.912,y+.3,1.39,.035,.94,.28)
-        g.box("Landscape_Vehicles","Teal",x-.914,y+.3,1.06,.035,.28,.94)
-
-
-def site(g,w,d):
-    g.box("Landscape_Base","Concrete",0,0,0,w,d,.32)
-    g.box("Landscape_Paving","Paving",0,0,.32,w-.35,d-.35,.08)
-    g.box("Landscape_Lawn","Grass",0,0,.4,w-1.4,d-1.4,.025)
-    # Perimeter pedestrian pavement and modest boundary kerbs.
-    for y in [-d/2+1.8,d/2-1.8]:
-        g.box("Landscape_Paving","Paving",0,y,.43,w-2,2,.07)
-    for x in [-w/2+1.8,w/2-1.8]:
-        g.box("Landscape_Paving","Paving",x,0,.43,2,d-6,.07)
-    for y in [-d/2+3.0,d/2-3.0]:
-        g.box("Landscape_Kerbs","Ivory",0,y,.4,w-2,.16,.19)
-
-
-def road(g,x,y,w,d,kerbs=True):
-    g.box("Landscape_Road","Asphalt",x,y,.435,w,d,.035)
-    if kerbs:
-        for sy in [-1,1]:
-            g.box("Landscape_Kerbs","Ivory",x,y+sy*d/2,.44,w,.15,.16)
-
-
-def parking(g,startx,y,n,spacing=2.7):
-    for i in range(n):
-        x=startx+i*spacing
-        g.box("Landscape_Parking","Line",x-spacing/2,y,.481,.08,4.8,.014)
-        g.box("Landscape_Parking","Line",x,y+2.4,.481,spacing,.075,.014)
-        if i%3 != 1:
-            car(g,x,y,"CarLight" if i%2 else "CarBlue")
-
-
-def framed_window(g,x,y,z,w,h,wall="front",frame="White",glass="Glass"):
-    if wall in ("front","back"):
-        g.box("Facade_Glass",glass,x,y,z,w,.065,h)
-        for xx in [x-w/2,x+w/2,x]:
-            g.box("Facade_Frames",frame,xx,y-.035 if wall=="front" else y+.035,z,.072,.1,h)
-        for zz in [z,z+h-.07]:
-            g.box("Facade_Frames",frame,x,y,zz,w,.14,.075)
-        g.box("Facade_Sills",frame,x,y,z-.07,w+.18,.28,.075)
+def window(g,cx,cy,z,w,h,side="front",dark=False,divisions=2):
+    glass="GlassDark" if dark else "Glass"
+    if side in ("front","back"):
+        g.box("Facade_Glazing",glass,cx,cy,z,w,.045,h)
+        for i in range(divisions+1):
+            g.box("Facade_Mullions","Graphite",cx-w/2+i*w/divisions,cy,z,.045,.10,h)
+        for zz in [z,z+h-.045]:
+            g.box("Facade_Mullions","Graphite",cx,cy,zz,w,.10,.045)
+        if h>2.5:
+            g.box("Facade_Transoms","Graphite",cx,cy,z+h*.73,w,.08,.04)
+        g.box("Facade_Sills","White",cx,cy,z-.06,w+.12,.18,.055)
     else:
-        g.box("Facade_Glass",glass,x,y,z,.065,w,h)
-        for yy in [y-w/2,y+w/2,y]:
-            g.box("Facade_Frames",frame,x,yy,z,.1,.072,h)
-        for zz in [z,z+h-.07]:
-            g.box("Facade_Frames",frame,x,y,zz,.14,w,.075)
-        g.box("Facade_Sills",frame,x,y,z-.07,.28,w+.18,.075)
+        g.box("Facade_Glazing",glass,cx,cy,z,.045,w,h)
+        for i in range(divisions+1):
+            g.box("Facade_Mullions","Graphite",cx,cy-w/2+i*w/divisions,z,.10,.045,h)
+        for zz in [z,z+h-.045]:
+            g.box("Facade_Mullions","Graphite",cx,cy,zz,.10,w,.045)
+        if h>2.5:
+            g.box("Facade_Transoms","Graphite",cx,cy,z+h*.73,.08,w,.04)
+        g.box("Facade_Sills","White",cx,cy,z-.06,.18,w+.12,.055)
 
 
-def building(g,cx,cy,w,d,floors,fh=3.3,facade="Ivory",bay=3.4,accent="Dark",stripe=False):
-    zbase=.55
-    nx,ny=max(2,round(w/bay)),max(2,round(d/bay))
+def building(g,cx,cy,w,d,levels,fh=3.3,bay=4.2,core=True,cut=False,continuous=False):
+    """Column-and-beam frame with a partially removed front-right envelope."""
+    base=.6
+    nx,ny=round(w/bay),round(d/bay)
     bx,by=w/nx,d/ny
-    # Exposed floor decks and primary columns support the cutaway view.
-    for f in range(floors+1):
-        g.box("Structure_Slabs","Concrete",cx,cy,zbase+f*fh,w,d,.24)
+    hx,hy=cx-.6,cy+.1
+    hole=(hx,hy,4.05,5.95) if core else None
+    g.box("Structure_FoundationRafts","ConcreteCut",cx,cy,0,w+.55,d+.55,.42)
+    # Distinct bearing grid, spanning beams and slab depths.
     for i in range(nx+1):
-        for j in [0,ny]:
-            g.box("Structure_Columns","Concrete",cx-w/2+i*bx,cy-d/2+j*by,zbase,.35,.35,floors*fh)
-    for j in range(1,ny):
-        for i in [0,nx]:
-            g.box("Structure_Columns","Concrete",cx-w/2+i*bx,cy-d/2+j*by,zbase,.35,.35,floors*fh)
-    g.box("Structure_Core","Concrete",cx,cy,zbase,3.1,3.8,fh*floors)
-    for f in range(floors):
-        z=zbase+f*fh
-        for s in [-1,1]:
-            yy=cy+s*(d/2+.03)
-            mat=accent if stripe and f==0 else facade
-            g.box("Facade_Panels",mat,cx,yy,z,w,.22,.86)
-            g.box("Facade_Panels",mat,cx,yy,z+fh-.44,w,.22,.44)
-            for i in range(nx+1):
-                xx=cx-w/2+i*bx
-                g.box("Facade_Piers",facade,xx,yy,z,.70,.25,fh)
-            for i in range(nx):
-                xx=cx-w/2+(i+.5)*bx
-                framed_window(g,xx,yy+s*.13,z+.95,bx-.84,fh-1.48,"front" if s<0 else "back",glass="GlassLight" if (i+f)%5==0 else "Glass")
-            if f%3==2:
-                g.box("Facade_Bands","White",cx,yy,z+fh-.1,w+.16,.34,.15)
-        for s in [-1,1]:
-            xx=cx+s*(w/2+.035)
-            g.box("Facade_Panels",facade,xx,cy,z,.24,d,.86)
-            g.box("Facade_Panels",facade,xx,cy,z+fh-.44,.24,d,.44)
+        xx=cx-w/2+i*bx
+        for j in range(ny+1):
+            yy=cy-d/2+j*by
+            if hole and abs(xx-hx)<2.2 and abs(yy-hy)<3.15:
+                continue
+            g.box("Structure_ColumnBases","ConcreteCut",xx,yy,.42,.7,.7,.18)
+            g.box("Structure_Columns","Concrete",xx,yy,base,.36,.36,levels*fh+.24)
+    for f in range(levels+1):
+        z=base+f*fh
+        slab_with_hole(g,cx,cy,w,d,z,.24,hole)
+        if f:
             for j in range(ny+1):
                 yy=cy-d/2+j*by
-                g.box("Facade_Piers",facade,xx,yy,z,.25,.70,fh)
+                if hole and abs(yy-hy)<3.15:
+                    for a,b in [(cx-w/2,hx-2.02),(hx+2.02,cx+w/2)]:
+                        g.box("Structure_Rigels","ConcreteCut",(a+b)/2,yy,z-.27,b-a,.28,.27)
+                else:
+                    g.box("Structure_Rigels","ConcreteCut",cx,yy,z-.27,w,.28,.27)
+            for i in range(nx+1):
+                xx=cx-w/2+i*bx
+                if hole and abs(xx-hx)<2.2:
+                    continue
+                g.box("Structure_SecondaryBeams","Concrete",xx,cy,z-.18,.24,d,.18)
+    if core:
+        stair_core(g,hx,hy,levels,fh,base)
+    for f in range(levels):
+        z=base+f*fh
+        # Interior partitions behind the opened face demonstrate inhabited bays.
+        if cut:
+            for j in range(1,ny):
+                yy=cy-d/2+j*by
+                if yy<cy:
+                    g.box("Structure_InteriorPartitions","Interior",cx+w*.22,yy,z+.24,w*.33,.12,fh-1.05)
+        for sign in [-1,1]:
+            yy=cy+sign*(d/2+.12)
+            for i in range(nx):
+                xx=cx-w/2+(i+.5)*bx
+                opened=cut and sign<0 and i>=nx-2 and f>=1
+                if opened:
+                    continue
+                lower=.66 if not continuous else .36
+                height=fh-lower-.38
+                g.box("Facade_Spandrels","White",xx,yy,z+.24,bx-.015,.20,lower-.24)
+                g.box("Facade_Headers","White",xx,yy,z+fh-.35,bx-.015,.20,.35)
+                for dx in [-bx/2+.12,bx/2-.12]:
+                    g.box("Facade_Piers","White",xx+dx,yy,z+.24,.225,.24,fh-.24)
+                window(g,xx,yy+sign*.13,z+lower,bx-.55,height,"front" if sign<0 else "back",dark=(f==0),divisions=3 if continuous else 2)
+        for sign in [-1,1]:
+            xx=cx+sign*(w/2+.12)
             for j in range(ny):
                 yy=cy-d/2+(j+.5)*by
-                framed_window(g,xx+s*.12,yy,z+.95,by-.83,fh-1.48,"side")
-    roof=zbase+floors*fh+.24
-    g.box("Structure_Roof","Roof",cx,cy,roof,w-.4,d-.4,.07)
-    for s in [-1,1]:
-        g.box("Facade_Parapets",facade,cx+s*w/2,cy,roof,.22,d+.3,.65)
-        g.box("Facade_Parapets",facade,cx,cy+s*d/2,roof,w,.22,.65)
-        g.box("Facade_Cappings","Metal",cx,cy+s*d/2,roof+.64,w+.3,.32,.07)
-        g.box("Facade_Cappings","Metal",cx+s*w/2,cy,roof+.64,.32,d+.3,.07)
-    g.box("Structure_Rooftop","Ivory",cx+1,cy+1,roof,3.1,3.5,1.55)
-    g.box("Structure_Rooftop","Metal",cx+1,cy+1,roof+1.55,3.4,3.8,.14)
-    for k in range(max(1,int(w/12))):
-        x=cx-w/3+k*5.0
-        g.box("Structure_Mechanical","Metal",x,cy+d/4,roof+.15,2.1,1.5,.8)
+                opened=cut and sign>0 and j<max(1,ny//2) and f>=1
+                if opened:
+                    continue
+                lower=.66 if not continuous else .36
+                g.box("Facade_Spandrels","White",xx,yy,z+.24,.20,by-.015,lower-.24)
+                g.box("Facade_Headers","White",xx,yy,z+fh-.35,.20,by-.015,.35)
+                for dy in [-by/2+.12,by/2-.12]:
+                    g.box("Facade_Piers","White",xx,yy+dy,z+.24,.24,.225,fh-.24)
+                window(g,xx+sign*.13,yy,z+lower,by-.55,fh-lower-.38,"side",dark=(f==0),divisions=3 if continuous else 2)
+    roof=base+levels*fh+.24
+    # Membrane strips leave the real stair opening legible from the axonometric view.
+    slab_with_hole(g,cx,cy,w-.32,d-.32,roof,.045,hole,"Structure_RoofDeck")
+    for sign in [-1,1]:
+        g.box("Facade_Parapets","White",cx,cy+sign*d/2,roof,w,.15,.48)
+        g.box("Facade_Parapets","White",cx+sign*w/2,cy,roof,.15,d,.48)
+        g.box("Facade_ParapetCaps","Graphite",cx,cy+sign*d/2,roof+.48,w+.14,.24,.035)
+        g.box("Facade_ParapetCaps","Graphite",cx+sign*w/2,cy,roof+.48,.24,d+.14,.035)
+    # Plant equipment is simple engineering geometry, restrained in scale.
+    for i in range(max(1,round(w/12))):
+        xx=cx-w*.30+i*4.5
+        yy=cy+d*.32
+        g.box("Structure_RooftopEquipment","Steel",xx,yy,roof+.1,1.8,1.2,.58)
         for j in range(5):
-            g.box("Structure_Mechanical","Dark",x-.8+j*.4,cy+d/4,roof+.95,.1,1.35,.04)
+            g.box("Structure_MechanicalLouvers","Graphite",xx-.65+j*.32,yy,roof+.69,.05,1.05,.035)
     return roof
 
 
-def balcony(g,x,y,z,w=2.6):
-    g.box("Structure_Balconies","Concrete",x,y,z,w,1.85,.20)
-    g.box("Facade_BalconyGlass","GlassLight",x,y-.86,z+.2,w,.07,.99)
-    for xx in [x-w/2,x+w/2]:
-        g.box("Facade_BalconyGlass","GlassLight",xx,y,z+.2,.07,1.78,.99)
-        g.box("Facade_BalconyRails","White",xx,y-.9,z+.2,.085,.085,1.06)
-    g.box("Facade_BalconyRails","Metal",x,y-.91,z+1.23,w+.05,.09,.08)
+def entrance(g,x,y,w=5.4,canopy=2.1):
+    g.box("Structure_EntranceCanopy","Concrete",x,y,3.30,w,canopy,.18)
+    for sign in [-1,1]:
+        g.box("Structure_EntrancePosts","Steel",x+sign*(w/2-.25),y-canopy/2+.22,.42,.09,.09,2.87)
+    for k in range(3):
+        g.box("Structure_EntranceSteps","Concrete",x,y-1.3-k*.30,0,w-.5,.30,.15*(3-k))
 
 
 def apartment(g):
-    site(g,76,60)
-    road(g,0,-22,70,10)
-    parking(g,-28,-23,9)
-    g.box("Landscape_Paving","Paving",0,-10,.46,51,10,.06)
-    g.box("Landscape_Paving","Paving",0,2,.44,49,25,.06)
-    for cx,cy,nf,mat in [(-11,3,11,"Brick"),(11,5,10,"Ivory")]:
-        roof=building(g,cx,cy,19,17,nf,3.12,mat,3.15,"Dark",True)
-        # Vertical bright lodgia ribbons and their detailed glass balustrades.
-        for xoff in [-5.0,4.45]:
-            for f in range(1,nf):
-                balcony(g,cx+xoff,cy-9.28,.55+f*3.12,2.7)
-            for sx in [-1,1]:
-                g.box("Facade_Loggias","White",cx+xoff+sx*1.43,cy-9.1,3.67,.18,2.12,(nf-1)*3.12+.36)
-        g.box("Facade_Entrances","Dark",cx,cy-8.85,.55,3.0,.16,2.8)
-        framed_window(g,cx,cy-8.99,.7,2.55,2.5,"front",frame="Metal")
-        g.box("Structure_Canopies","Dark",cx,cy-10.1,3.25,5.3,3.1,.22)
-        for sx in [-2.25,2.25]:
-            g.box("Structure_CanopyColumns","Metal",cx+sx,cy-11.1,.52,.11,.11,2.75)
-        g.box("Landscape_Paving","Paving",cx,cy-12,.47,4,5,.1)
-        for k in range(3):
-            g.cylinder("Structure_Rooftop","Metal",cx-5+k*4,cy+1,roof,.25,1.4,10)
-    # Connecting glazed lobby and a courtyard pavilion.
-    g.box("Structure_Lobby","Concrete",0,-1,.53,4.0,11.0,3.1)
-    framed_window(g,0,-6.6,.7,3.6,2.5)
-    for xy in [(-31,-11),(-31,1),(-30,14),(29,-10),(31,5),(29,20),(-20,23),(-5,24),(12,24)]:
-        tree(g,*xy,1.04,int(xy[0]*4))
-    for x in [-22,-7,8,25]:
-        bench(g,x,-12)
-        lamp(g,x,-15)
-    g.box("Landscape_Courtyard","Court",-26,12,.48,6.5,7.5,.06)
-    for x in [-27,-24.7]:
-        g.box("Landscape_Play","Wood",x,12,.55,.13,.13,2.4)
-    g.box("Landscape_Play","Wood",-25.85,12,2.92,2.8,.18,.18)
-    for x in [-26.7,-25.0]:
-        for yy in [11.8,12.2]:
-            g.box("Landscape_Play","Metal",x,yy,1.07,.035,.035,1.82)
-        g.box("Landscape_Play","Teal",x,12,1.02,.7,.5,.10)
-
-
-def sports_court(g,x,y,w=24,d=13):
-    g.box("Landscape_Sports","Court",x,y,.56,w+2,d+2,.06)
-    g.box("Landscape_Sports","Sport",x,y,.62,w,d,.025)
-    for sy in [-1,1]:
-        g.box("Landscape_SportsLines","Line",x,y+sy*(d/2-.6),.65,w-1.2,.075,.02)
-    for sx in [-1,1]:
-        g.box("Landscape_SportsLines","Line",x+sx*(w/2-.6),y,.65,.075,d-1.2,.02)
-        g.box("Landscape_SportsLines","Line",x+sx*(w/2-4.0),y,.65,.075,5.2,.02)
-        for yy in [-2.6,2.6]:
-            g.box("Landscape_SportsLines","Line",x+sx*(w/2-2.3),y+yy,.65,3.4,.075,.02)
-        g.box("Landscape_SportsEquipment","Metal",x+sx*(w/2-1),y,.56,.1,.1,3.1)
-        g.box("Landscape_SportsEquipment","White",x+sx*(w/2-1),y,3.38,.12,1.7,1.0)
-    g.box("Landscape_SportsLines","Line",x,y,.65,.075,d-1.2,.02)
-    sides=40
-    radius=1.7
-    for i in range(sides):
-        a,b=math.tau*i/sides,math.tau*(i+1)/sides
-        p=[(x+rr*math.cos(aa),y+rr*math.sin(aa),.67) for rr,aa in [(radius,a),(radius,b),(radius+.075,b),(radius+.075,a)]]
-        g.mesh("Landscape_SportsLines","Line",p,[(0,1,2,3)])
+    building(g,-9.7,1.0,18.0,18.0,11,3.05,4.5,True,False)
+    building(g,9.6,0,18.0,16.0,10,3.05,4.5,True,True)
+    # Narrow recessed link; architectural volumes remain structurally distinct.
+    for f in range(11):
+        g.box("Structure_LinkSlabs","Concrete",-.05,3,.6+f*3.05,1.28,6,.24)
+    for f in range(10):
+        window(g,-.05,-.04,.92+f*3.05,1.0,2.52,divisions=1)
+    # A sober stack of inset balconies on the complete residential elevation.
+    for x in [-14.2,-5.2]:
+        for f in range(1,11):
+            z=.6+f*3.05
+            g.box("Structure_BalconySlabs","Concrete",x,-8.68,z,3.0,1.35,.20)
+            g.box("Facade_BalconyGlass","GlassDark",x,-9.30,z+.2,2.90,.05,1.0)
+            for s in [-1,1]:
+                g.box("Facade_BalconyFrames","Graphite",x+s*1.45,-9.30,z+.2,.04,.055,1.02)
+            g.box("Facade_BalconyFrames","Graphite",x,-9.30,z+1.20,2.95,.06,.035)
+    entrance(g,-9.7,-9.25)
 
 
 def school(g):
-    site(g,94,72)
-    road(g,0,-29,88,7)
-    parking(g,-32,-29,7)
-    g.box("Landscape_Paving","Paving",-7,0,.45,62,47,.07)
-    building(g,-8,13,54,12,3,3.65,"Ivory",3.6,"Teal",True)
-    building(g,-29,-3.4,12,20,3,3.65,"Ivory",3.7,"Teal",True)
-    building(g,13,-3.4,12,20,3,3.65,"Ivory",3.7,"Teal",True)
-    for x in [-29,13]:
-        g.box("Structure_ExpansionJoints","Dark",x,6.8,.55,11.7,.4,10.93)
-    # Glazed entry portal at the centre of the courtyard façade.
-    g.box("Facade_EntryPortal","Teal",-8,6.68,.55,12,.26,10.96)
-    for f in range(3):
-        framed_window(g,-8,6.48,.9+f*3.65,10.6,2.8,frame="Metal")
-    g.box("Structure_EntryCanopy","White",-8,4.6,3.78,14,5.2,.25)
-    for x in [-13.8,-2.2]:
-        g.box("Structure_EntryColumns","Metal",x,2.7,.55,.14,.14,3.23)
-    # Exterior vertical sun-screen accents with long, crisp shadows.
-    for x in [-31.5,-27.5,-23.5,7.5,11.5,15.5]:
-        g.box("Facade_SunScreens","Ochre",x,-13.85,4.0,.24,.6,6.65)
-    building(g,33,11,18,28,1,9.5,"Brick",4.5,"Teal")
-    for y in [-.5,4,8.5,13,17.5,22]:
-        framed_window(g,42.22,y,4.2,3.15,4.2,"side",frame="Dark")
-    g.box("Structure_Link","Concrete",22,14,.56,6,7,3.8)
-    framed_window(g,22,10.42,.85,5.4,2.9,frame="Metal")
-    sports_court(g,26,-19.5,25,10)
-    g.box("Landscape_Courtyard","Grass",-8,-6,.54,25,15,.06)
-    g.box("Landscape_Paving","Paving",-8,-5,.61,5,21,.035)
-    for x in [-17,1]:
-        for y in [-8,-1]:
-            tree(g,x,y,.85,int(x+y))
-    for x in [-39,-22,-4,16,37]:
-        tree(g,x,29,.95,int(x+100))
-    for y in [-16,0,15]:
-        tree(g,-41,y,.95,int(y+200))
-    for x in [-18,2]:
-        bench(g,x,-13)
-        lamp(g,x,-19)
-    for x in [-16,0]:
-        g.box("Landscape_EntrySteps","Concrete",x,-18,.46,9,1.8,.13)
-    # Minimal sports perimeter, represented by thin horizontal rails, not a solid fence.
-    for x in range(13,40,3):
-        g.box("Landscape_SportsFence","Metal",x,-25,.53,.05,.05,2.9)
-    for h in [.9,1.9,3.2]:
-        g.box("Landscape_SportsFence","Metal",26,-25,h,26,.04,.045)
+    # Three educational wings enclose an open court without a landscape diorama.
+    building(g,-7.5,7.5,42,12,3,3.75,6.0,True,False,True)
+    building(g,-22.5,-10.85,12,23.4,3,3.75,5.8,True,False,True)
+    building(g,7.5,-10.85,12,23.4,3,3.75,5.8,True,True,True)
+    # Continuous foundation necks support the two small expansion-joint gaps.
+    for x in [-22.5,7.5]:
+        g.box("Structure_ExpansionJoints","ConcreteCut",x,1.175,.0,11.4,.06,.42)
+        for f in range(4):
+            g.box("Structure_WingLinkSlabs","Concrete",x,1.175,.6+f*3.75,11.4,.60,.24)
+    entrance(g,-7.5,-.15,8.0,2.6)
+    # A gym with exposed long-span steel roof trusses distinguishes the school.
+    x,y,w,d=25.0,2.0,16.0,25.0
+    g.box("Structure_GymFoundation","ConcreteCut",x,y,0,w+.5,d+.5,.42)
+    g.box("Structure_GymFloor","Concrete",x,y,.60,w,d,.24)
+    for i in range(6):
+        yy=y-d/2+i*d/5
+        for sign in [-1,1]:
+            g.box("Structure_GymColumns","Concrete",x+sign*w/2,yy,.60,.40,.40,8.0)
+    for i in range(6):
+        # Trusses span the short dimension, at regular longitudinal stations.
+        yy=y-d/2+i*d/5
+        a=(x-w/2,yy,8.45);b=(x+w/2,yy,8.45)
+        g.beam("Structure_RoofTrusses","Steel",a,b,.16,.22)
+        g.beam("Structure_RoofTrusses","Steel",(x-w/2,yy,9.75),(x+w/2,yy,9.75),.13,.18)
+        for xx in [x-w/2,x+w/2]:
+            g.beam("Structure_RoofTrussPosts","Steel",(xx,yy,8.45),(xx,yy,9.75),.08)
+        for j in range(6):
+            xx=x-w/2+j*w/6
+            xx2=xx+w/6
+            z1,z2=(8.45,9.75) if j%2==0 else (9.75,8.45)
+            g.beam("Structure_RoofTrussDiagonals","Steel",(xx,yy,z1),(xx2,yy,z2),.07)
+    for i in range(7):
+        xx=x-w/2+i*w/6
+        g.beam("Structure_RoofPurlins","Steel",(xx,y-d/2,9.85),(xx,y+d/2,9.85),.09,.12)
+    # Only the rear roof half is fitted, exposing the steelwork intentionally.
+    g.box("Facade_GymRoof","White",x,y+d/4,9.92,w+.3,d/2,.14)
+    for sign in [-1,1]:
+        xx=x+sign*w/2
+        for j in range(5):
+            yy=y-d/2+(j+.5)*d/5
+            if sign>0 and j<2:
+                continue
+            g.box("Facade_GymPanels","White",xx,yy,.84,.20,d/5-.02,2.30)
+            window(g,xx+sign*.14,yy,3.18,d/5-.38,4.7,"side",divisions=3)
+            g.box("Facade_GymPanels","White",xx,yy,7.96,.20,d/5-.02,.5)
+    # A high glazed gable displays the sport-hall scale without decorative cues.
+    for i in range(4):
+        xx=x-w/2+(i+.5)*w/4
+        window(g,xx,y+d/2+.14,.9,w/4-.22,7.2,divisions=2)
+    for f in range(2):
+        g.box("Structure_GymLink","Concrete",15.2,5,.6+f*3.75,3.25,5,.24)
 
 
 def hospital(g):
-    site(g,90,68)
-    road(g,0,-26,84,10,False)
-    g.box("Landscape_Kerbs","Ivory",0,-31,.44,84,.15,.16)
-    g.box("Landscape_Kerbs","Ivory",-9.5,-21,.44,65,.15,.16)
-    g.box("Landscape_Kerbs","Ivory",38.5,-21,.44,7,.15,.16)
-    parking(g,-31,-27,6)
-    g.box("Landscape_Paving","Paving",0,-1,.44,64,41,.075)
-    building(g,0,9,46,18,6,3.6,"Ivory",3.85,"Teal",True)
-    building(g,-17,-10,12,20,4,3.6,"Ivory",3.85,"Teal",True)
-    # Continuous central glazed stair / lift bay with individual mullions.
-    for f in range(6):
-        g.box("Facade_CurtainWall","Glass",0,-.24,.8+f*3.6,7.8,.11,3.2)
-        for x in [-3.9,-1.95,0,1.95,3.9]:
-            g.box("Facade_CurtainMullions","Metal",x,-.35,.65+f*3.6,.08,.13,3.6)
-        g.box("Facade_CurtainMullions","Metal",0,-.37,.65+f*3.6,8,.13,.1)
-    for x in [-20,-12,12,20]:
-        g.box("Facade_SunScreens","Teal",x,-.45,4.4,.23,.7,17.9)
-    # Low, fully glazed consultation and arrival pavilion.
-    building(g,7,-8,22,12,1,4.3,"White",3.6,"Teal",True)
-    for x in [-1.5,2.1,5.7,9.3,12.9,16.5]:
-        framed_window(g,x,-14.25,.75,3.1,3.55,frame="Metal")
-    g.box("Facade_PavilionFascia","Teal",7,-14.4,4.64,23.5,.45,.57)
-    g.box("Structure_PavilionRoof","White",7,-8,4.94,23.5,13.5,.24)
-    # Three-dimensional medical cross on the solid end panel.
-    for x,y,z,w,d,h in [(23.3,11,16,.15,4.2,1.1),(23.32,11,14.45,.15,1.1,4.2)]:
-        g.box("Facade_MedicalSymbol","Teal",x,y,z,w,d,h)
-    # Entry steps, accessible ramp and twin handrails.
-    for i in range(4):
-        g.box("Landscape_EntrySteps","Concrete",5,-15.1-i*.48,.47,8,2.3-i*.48,.09*(4-i))
-    verts=[(10,-18,.48),(17,-18,.48),(17,-16.4,.48),(10,-16.4,.48),
-           (10,-18,.87),(17,-18,.52),(17,-16.4,.52),(10,-16.4,.87)]
-    g.mesh("Landscape_AccessibleRamp","Concrete",verts,[(0,3,2,1),(4,5,6,7),(0,1,5,4),(3,7,6,2),(0,4,7,3),(1,2,6,5)])
-    for y in [-18,-16.4]:
-        for x in [10,12,14,16,17]:
-            g.box("Landscape_RampRails","Metal",x,y,.53,.04,.04,1.1)
-        g.box("Landscape_RampRails","Metal",13.5,y,1.63,7,.05,.05)
-    # Ambulance porte-cochère and a dedicated access spur.
-    road(g,29,-11.7,10,18.6,False)
-    for x in [24,34]:
-        g.box("Landscape_Kerbs","Ivory",x,-11.7,.44,.15,18.6,.16)
-    g.box("Structure_AmbulanceCanopy","White",28,-8,4.55,12,12,.34)
-    g.box("Facade_AmbulanceFascia","Teal",28,-14,4.47,12,.18,.5)
-    for x in [23,33]:
-        for y in [-12.8,-3.0]:
-            g.box("Structure_AmbulanceColumns","Metal",x,y,.54,.18,.18,4.02)
-    car(g,27,-8,"CarLight",True)
-    car(g,30,-16,"CarLight",True)
-    for xy in [(-36,-16),(-37,0),(-37,17),(34,21),(8,27),(-13,27),(-32,27),(39,1),(39,-13)]:
-        tree(g,*xy,.95,int(xy[0]*10+xy[1]))
-    for x in [-31,-8,8,22]:
-        lamp(g,x,-20)
-    for y in [-3,4,11]:
-        bench(g,-29,y,False)
-    for x in [-7,0,7,14]:
-        g.box("Landscape_Planters","White",x,-19.1,.5,2.9,1.3,.58)
-        g.box("Landscape_Planting","Green",x,-19.1,1.08,2.7,1.1,.42)
+    # A longer diagnostic block and a shorter inpatient wing express the programme.
+    building(g,0,6,42,18,6,3.6,5.25,True,True,True)
+    building(g,-15,-13.1,12,19.0,4,3.6,4.75,True,False,True)
+    # Glazed low entrance/diagnostic wing and a separate structural canopy.
+    building(g,5,-11.0,22,13.0,1,4.5,5.5,False,False,True)
+    for z in [.6,5.1]:
+        g.box("Structure_DiagnosticLink","Concrete",5,-3.75,z,7,1.45,.24)
+    entrance(g,5,-18.8,9.0,2.4)
+    g.box("Structure_AmbulanceCanopy","Concrete",23.0,-10.0,4.3,10,12,.22)
+    for xx in [18.5,27.5]:
+        for yy in [-15.4,-4.6]:
+            g.box("Structure_AmbulanceColumns","Steel",xx,yy,0,.16,.16,4.3)
+            g.box("Structure_ColumnFootings","ConcreteCut",xx,yy,0,.7,.7,.3)
+    # A roof-level plant enclosure and risers reinforce the institutional typology.
+    z=.6+6*3.6+.29
+    g.box("Structure_PlantRoom","Concrete",-12,9,z,5.0,4.0,1.6)
+    for i in range(13):
+        g.box("Facade_PlantLouvers","Graphite",-14.35+i*.39,6.96,z+.2,.065,.12,1.2)
+    g.box("Structure_PlantRoof","Steel",-12,9,z+1.6,5.15,4.15,.1)
+    # Accessibility ramp is an actual sloping structural prism, no site decoration.
+    g.mesh("Structure_EntranceRamp","Concrete",[(9,-20,0),(17,-20,0),(17,-18.7,0),(9,-18.7,0),
+             (9,-20,.58),(17,-20,.10),(17,-18.7,.10),(9,-18.7,.58)],
+             [(0,3,2,1),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)])
+    for yy in [-20,-18.7]:
+        g.beam("Structure_RampRails","Steel",(9,yy,1.48),(17,yy,1.00),.045)
+        for i in range(5):
+            xx=9+i*2
+            g.box("Structure_RampRails","Steel",xx,yy,.58-i*.12,.035,.035,.90)
+
+
+def centre_model(objects):
+    coords=[Vector(v) for o in objects for v in o.bound_box]
+    lo=Vector(tuple(min(p[i] for p in coords) for i in range(3)))
+    hi=Vector(tuple(max(p[i] for p in coords) for i in range(3)))
+    offset=Vector((-(lo.x+hi.x)/2,-(lo.y+hi.y)/2,-lo.z))
+    for o in objects:
+        for v in o.data.vertices:
+            v.co += offset
+        o.data.update()
+    return lo+offset,hi+offset
 
 
 def aim(obj, target):
     obj.rotation_euler=(Vector(target)-obj.location).to_track_quat("-Z","Y").to_euler()
 
 
-def scene_setup(kind, objects):
+def render_setup(kind,bounds):
+    lo,hi=bounds
     scene=bpy.context.scene
     scene.render.engine="CYCLES"
-    scene.cycles.samples=24
+    scene.cycles.samples=40
     scene.cycles.use_denoising=True
     scene.cycles.max_bounces=5
     scene.cycles.diffuse_bounces=3
-    scene.cycles.glossy_bounces=3
-    scene.render.resolution_x=1400
-    scene.render.resolution_y=1100
+    scene.render.resolution_x=1600
+    scene.render.resolution_y=1200
     scene.render.resolution_percentage=100
     scene.render.image_settings.file_format="JPEG"
-    scene.render.image_settings.quality=92
-    scene.render.film_transparent=False
-    scene.world.color=(.65,.7,.74)
+    scene.render.image_settings.quality=94
+    scene.render.filepath=os.path.join(OUT,kind+".jpg")
     scene.world.use_nodes=True
-    scene.world.node_tree.nodes["Background"].inputs["Color"].default_value=(.72,.78,.82,1)
-    scene.world.node_tree.nodes["Background"].inputs["Strength"].default_value=.65
+    scene.world.node_tree.nodes["Background"].inputs["Color"].default_value=(.87,.88,.89,1)
+    scene.world.node_tree.nodes["Background"].inputs["Strength"].default_value=.72
     scene.view_settings.view_transform="AgX"
     scene.view_settings.look="AgX - Medium High Contrast"
-    # This backdrop is rendered, but intentionally excluded from the portable GLB.
-    bpy.ops.mesh.primitive_plane_add(size=2000, location=(0,0,-.07))
+    # A plain shadow catcher is for rendering only and never enters the GLB.
+    bpy.ops.mesh.primitive_plane_add(size=1200,location=(0,0,-.08))
     backdrop=bpy.context.object
     backdrop.name="Render_Backdrop"
-    backdrop.data.materials.append(material("Backdrop","E3E8E7",.9))
-    bpy.ops.object.light_add(type="AREA", location=(-45,-55,95))
-    light=bpy.context.object
-    light.name="Render_Key"
-    light.data.energy=155000
-    light.data.shape="DISK"
-    light.data.size=55
-    aim(light,(0,0,0))
-    bpy.ops.object.light_add(type="SUN", location=(0,0,80))
-    sun=bpy.context.object
-    sun.name="Render_Sun"
-    sun.data.energy=1.6
-    sun.data.angle=.15
-    sun.rotation_euler=(math.radians(25),math.radians(-28),math.radians(-35))
-    bpy.ops.object.camera_add(location=(95,-115,92 if kind=="apartment" else 102))
+    backdrop.data.materials.append(material("Backdrop","F4F4F1",.93))
+    bpy.ops.object.light_add(type="AREA",location=(-35,-48,80))
+    key=bpy.context.object
+    key.name="Render_KeyLight"
+    key.data.energy=95000
+    key.data.shape="DISK"
+    key.data.size=32
+    aim(key,(0,0,10))
+    bpy.ops.object.light_add(type="AREA",location=(45,20,50))
+    fill=bpy.context.object
+    fill.name="Render_FillLight"
+    fill.data.energy=40000
+    fill.data.size=38
+    aim(fill,(0,0,10))
+    target=(lo+hi)/2
+    bpy.ops.object.camera_add(location=target+Vector((95,-95,95)))
     camera=bpy.context.object
-    camera.name="Render_Camera"
-    aim(camera,(0,0,10 if kind=="apartment" else 4))
+    camera.name="Render_OrthographicAxonometricCamera"
+    aim(camera,target)
     camera.data.type="ORTHO"
-    camera.data.ortho_scale=100 if kind=="apartment" else 117
-    camera.data.lens=48
-    camera.data.clip_end=2500
+    camera.data.clip_end=2000
     scene.camera=camera
-    scene.render.filepath=os.path.join(OUT,kind+".jpg")
+    bpy.context.view_layer.update()
+    inv=camera.matrix_world.inverted()
+    projected=[inv@Vector((x,y,z)) for x in [lo.x,hi.x] for y in [lo.y,hi.y] for z in [lo.z,hi.z]]
+    spanx=max(p.x for p in projected)-min(p.x for p in projected)
+    spany=max(p.y for p in projected)-min(p.y for p in projected)
+    camera.data.ortho_scale=max(spanx,spany*4/3)*1.11
 
 
 def run(kind):
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
-    mats=materials()
-    g=Meshes()
+    # Purge unused materials/meshes so repeated exports retain stable names.
+    for datablocks in [bpy.data.meshes,bpy.data.materials]:
+        for block in list(datablocks):
+            if block.users==0:
+                datablocks.remove(block)
+    g=Geometry()
     globals()[kind](g)
-    objects=g.finish(mats)
-    triangles=sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in objects)
+    objects=g.finish()
+    bounds=centre_model(objects)
     for o in objects:
         o.select_set(True)
     bpy.context.view_layer.objects.active=objects[0]
     bpy.ops.export_scene.gltf(filepath=os.path.join(OUT,kind+".glb"),export_format="GLB",
-                              use_selection=True,export_yup=True,export_apply=True,
-                              export_animations=False,export_cameras=False,export_lights=False,
-                              export_extras=False,export_texcoords=False,export_normals=True)
-    scene_setup(kind,objects)
+        use_selection=True,export_yup=True,export_apply=True,export_animations=False,
+        export_cameras=False,export_lights=False,export_extras=False,export_texcoords=False,
+        export_normals=True)
+    render_setup(kind,bounds)
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(SOURCE,kind+".blend"))
     bpy.ops.render.render(write_still=True)
-    info={"kind":kind,"triangles":triangles,"mesh_objects":len(objects),
-          "glb_bytes":os.path.getsize(os.path.join(OUT,kind+".glb")),
+    lo,hi=bounds
+    info={"kind":kind,"revision":"engineering-axonometry-2026-09-06",
+          "triangles":sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in objects),
+          "mesh_objects":len(objects),"glb_bytes":os.path.getsize(os.path.join(OUT,kind+".glb")),
           "poster_bytes":os.path.getsize(os.path.join(OUT,kind+".jpg")),
-          "authorship":"Original architectural demonstration concept, authored in Blender 5.2",
-          "not_a_built_project":True}
+          "bounds_y_up":{"min":[lo.x,lo.z,-hi.y],"max":[hi.x,hi.z,-lo.y]},
+          "authorship":"Original engineering presentation concept, authored in Blender 5.2.1",
+          "not_a_built_project":True,"not_working_documentation":True}
     with open(os.path.join(SOURCE,kind+"-stats.json"),"w") as f:
         json.dump(info,f,ensure_ascii=False,indent=2)
     print("MODEL_COMPLETE "+json.dumps(info),flush=True)
-    return info
 
 
 requested=sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else ["apartment","school","hospital"]
-for item in requested:
-    run(item)
+for kind in requested:
+    run(kind)

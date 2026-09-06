@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
-import { routes } from "../src/siteData.js";
+import { routes, concepts } from "../src/siteData.js";
 const require = createRequire(import.meta.url);
 const {
   chromium,
@@ -57,10 +57,25 @@ try {
     result.pages.push({ route, status: res.status(), rawCanonical, ...data });
   }
   await page.goto(base, { waitUntil: "networkidle" });
-  await page.locator("[data-viewer]").waitFor({ state: "visible" });
-  await page.waitForFunction(
-    () => document.querySelector("[data-viewer]")?.dataset.status === "ready",
+  check(
+    (await page.locator("h1").innerText()).includes("Генеральный"),
+    "home gencontractor focus",
   );
+  check(
+    (await page.locator(".hero-visual img").count()) === 1,
+    "minimal photo hero",
+  );
+  check(
+    (await page.locator("canvas").count()) === 0,
+    "no decorative 3D in hero",
+  );
+  await page.locator(".engineering-preview").scrollIntoViewIfNeeded();
+  await page
+    .locator(".engineering-preview img")
+    .evaluateAll((images) =>
+      Promise.all(images.map((image) => image.decode())),
+    );
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: `${out}/v2-home-desktop.png`, fullPage: true });
   await page.screenshot({ path: `${out}/v2-home-top.png` });
   await page
@@ -73,11 +88,7 @@ try {
     () => document.querySelector("[data-viewer]")?.dataset.status === "ready",
   );
   result.checks.spaNavigation = true;
-  for (const [name, label] of [
-    ["apartment", "Многоквартирный дом"],
-    ["school", "Образовательный объект"],
-    ["hospital", "Здание здравоохранения"],
-  ]) {
+  for (const [name, label] of concepts.map((c) => [c.model, c.type])) {
     await page.getByRole("button", { name: label }).click();
     await page.waitForFunction((model) => {
       const v = document.querySelector("[data-viewer]");
@@ -101,18 +112,27 @@ try {
     await page.waitForTimeout(100);
     const zoom = await page
       .locator("[data-scene-surface]")
-      .getAttribute("data-distance");
-    check(Number(zoom) < Number(facade.distance), `${name} zoom`);
+      .getAttribute("data-zoom");
+    check(Number(zoom) > Number(facade.zoom), `${name} orthographic zoom`);
+    check(
+      facade.projection === "orthographic",
+      `${name} orthographic projection`,
+    );
     await page.getByRole("button", { name: "Посмотреть сверху" }).click();
     check(
       (await page.locator("[data-viewer]").getAttribute("data-view")) === "top",
       `${name} top`,
     );
     await page.getByRole("button", { name: "Вернуть исходный ракурс" }).click();
+    check(
+      (await page.locator("[data-viewer]").getAttribute("data-view")) ===
+        "isometric",
+      `${name} isometric reset`,
+    );
     await page.screenshot({ path: `${out}/v2-${name}-viewer.png` });
     result.scenes.push({ name, facade, frame, zoom });
   }
-  await page.getByRole("button", { name: "Многоквартирный дом" }).click();
+  await page.getByRole("button", { name: concepts[0].type }).click();
   await page.waitForFunction(
     () => document.querySelector("[data-viewer]")?.dataset.status === "ready",
   );
@@ -178,6 +198,13 @@ try {
     );
   }
   await mp.goto(base, { waitUntil: "networkidle" });
+  await mp.locator(".engineering-preview").scrollIntoViewIfNeeded();
+  await mp
+    .locator(".engineering-preview img")
+    .evaluateAll((images) =>
+      Promise.all(images.map((image) => image.decode())),
+    );
+  await mp.evaluate(() => window.scrollTo(0, 0));
   await mp.screenshot({ path: `${out}/v2-home-mobile.png`, fullPage: true });
   await mp.getByRole("button", { name: "Открыть меню" }).click();
   await mp

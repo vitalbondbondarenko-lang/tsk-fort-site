@@ -4,13 +4,16 @@ import { OrbitControls, useGLTF } from "@react-three/drei";
 import {
   ACESFilmicToneMapping,
   Box3,
+  EdgesGeometry,
   MathUtils,
-  PCFSoftShadowMap,
   Spherical,
   Vector3,
 } from "three";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
-const SKY = "#e8edf0";
+const PAPER = "#f2f0e9";
+const modelUrl = (model) =>
+  `${import.meta.env.BASE_URL}models/${model}.glb?v=engineering-20260906`;
 
 function CameraRig({
   dimensions,
@@ -22,6 +25,7 @@ function CameraRig({
   controlsRef,
 }) {
   const { camera, size, invalidate } = useThree();
+  const fitZoom = useRef(40);
   const scratch = useMemo(
     () => ({ offset: new Vector3(), spherical: new Spherical() }),
     [],
@@ -29,42 +33,53 @@ function CameraRig({
 
   const frameModel = () => {
     const [width, height, depth] = dimensions;
-    const target = new Vector3(0, view === "top" ? 0 : height * 0.36, 0);
+    const target = new Vector3(0, height / 2, 0);
     const direction =
       view === "top"
-        ? new Vector3(0.001, 1, 0.001).normalize()
-        : new Vector3(1.1, 0.92, 1.35).normalize();
+        ? new Vector3(0, 1, 0.0001).normalize()
+        : new Vector3(1, 1, 1).normalize();
     const right = new Vector3()
       .crossVectors(new Vector3(0, 1, 0), direction)
       .normalize();
     const up = new Vector3().crossVectors(direction, right).normalize();
-    const verticalTangent = Math.tan(MathUtils.degToRad(camera.fov / 2));
-    const horizontalTangent =
-      verticalTangent * (size.width / Math.max(1, size.height));
-    let distance = 0;
+    let minX = Infinity,
+      maxX = -Infinity,
+      minY = Infinity,
+      maxY = -Infinity;
     for (const x of [-width / 2, width / 2]) {
       for (const y of [0, height]) {
         for (const z of [-depth / 2, depth / 2]) {
           const point = new Vector3(x, y, z).sub(target);
-          distance = Math.max(
-            distance,
-            point.dot(direction) +
-              Math.abs(point.dot(right)) / horizontalTangent,
-            point.dot(direction) + Math.abs(point.dot(up)) / verticalTangent,
-          );
+          const projectedX = point.dot(right);
+          const projectedY = point.dot(up);
+          minX = Math.min(minX, projectedX);
+          maxX = Math.max(maxX, projectedX);
+          minY = Math.min(minY, projectedY);
+          maxY = Math.max(maxY, projectedY);
         }
       }
     }
-    distance *= 1.22;
-    camera.position.copy(target).addScaledVector(direction, distance);
+    // Orthographic framing keeps parallel construction lines parallel. The
+    // CSS surface excludes the control bar, so the whole model stays clear.
+    camera.left = -size.width / 2;
+    camera.right = size.width / 2;
+    camera.top = size.height / 2;
+    camera.bottom = -size.height / 2;
+    fitZoom.current =
+      Math.min(
+        Math.max(1, size.width - 28) / Math.max(0.01, maxX - minX),
+        Math.max(1, size.height - 24) / Math.max(0.01, maxY - minY),
+      ) / 1.08;
+    camera.zoom = fitZoom.current;
+    camera.position.copy(target).addScaledVector(direction, 30);
     camera.near = 0.1;
-    camera.far = Math.max(140, distance * 5);
+    camera.far = 100;
     camera.updateProjectionMatrix();
     camera.lookAt(target);
     if (controlsRef.current) {
       controlsRef.current.target.copy(target);
-      controlsRef.current.minDistance = Math.max(3, distance * 0.22);
-      controlsRef.current.maxDistance = distance * 2.3;
+      controlsRef.current.minZoom = fitZoom.current * 0.55;
+      controlsRef.current.maxZoom = fitZoom.current * 5;
       controlsRef.current.update();
     }
     invalidate();
@@ -82,11 +97,15 @@ function CameraRig({
     scratch.offset.copy(camera.position).sub(controls.target);
     scratch.spherical.setFromVector3(scratch.offset);
     if (command.type === "zoom-in" || command.type === "zoom-out") {
-      scratch.spherical.radius = MathUtils.clamp(
-        scratch.spherical.radius * (command.type === "zoom-in" ? 0.82 : 1.22),
-        controls.minDistance,
-        controls.maxDistance,
+      camera.zoom = MathUtils.clamp(
+        camera.zoom * (command.type === "zoom-in" ? 1.22 : 1 / 1.22),
+        controls.minZoom,
+        controls.maxZoom,
       );
+      camera.updateProjectionMatrix();
+      controls.update();
+      invalidate();
+      return;
     }
     if (command.type === "left") scratch.spherical.theta -= Math.PI / 12;
     if (command.type === "right") scratch.spherical.theta += Math.PI / 12;
@@ -116,7 +135,7 @@ function CameraRig({
       minPolarAngle={0.025}
       maxPolarAngle={Math.PI * 0.47}
       autoRotate={rotating && active && view !== "top"}
-      autoRotateSpeed={0.65}
+      autoRotateSpeed={0.25}
     />
   );
 }
@@ -132,43 +151,64 @@ function Architecture({
   controlsRef,
   onReady,
 }) {
-  const gltf = useGLTF(`${import.meta.env.BASE_URL}models/${model}.glb`);
+  const gltf = useGLTF(modelUrl(model));
   const { invalidate } = useThree();
-  const { scene, dimensions, offset, scale, materialCopies } = useMemo(() => {
-    const sceneCopy = gltf.scene.clone(true);
-    const materialCopies = [];
-    sceneCopy.traverse((object) => {
-      if (!object.isMesh) return;
-      const cloneMaterial = (original) => {
-        const copy = original.clone();
-        materialCopies.push(copy);
-        return copy;
+  const { scene, dimensions, offset, scale, materialCopies, edges } =
+    useMemo(() => {
+      const sceneCopy = gltf.scene.clone(true);
+      const materialCopies = [];
+      const edgeParts = { structure: [], facade: [] };
+      sceneCopy.updateMatrixWorld(true);
+      sceneCopy.traverse((object) => {
+        if (!object.isMesh) return;
+        const cloneMaterial = (original) => {
+          const copy = original.clone();
+          copy.polygonOffset = true;
+          copy.polygonOffsetFactor = 1;
+          copy.polygonOffsetUnits = 1;
+          materialCopies.push(copy);
+          return copy;
+        };
+        object.material = Array.isArray(object.material)
+          ? object.material.map(cloneMaterial)
+          : cloneMaterial(object.material);
+        object.castShadow = false;
+        object.receiveShadow = false;
+        object.userData.initialVisibility = object.visible;
+        if (object.visible && !/^Landscape/i.test(object.name)) {
+          const edge = new EdgesGeometry(object.geometry, 30);
+          edge.applyMatrix4(object.matrixWorld);
+          edgeParts[/^Facade/i.test(object.name) ? "facade" : "structure"].push(
+            edge,
+          );
+        }
+      });
+      const box = new Box3().setFromObject(sceneCopy);
+      const size = box.getSize(new Vector3());
+      const center = box.getCenter(new Vector3());
+      const scalar = 10 / Math.max(size.x, size.y, size.z, 0.001);
+      const edges = {};
+      for (const category of ["structure", "facade"]) {
+        const parts = edgeParts[category];
+        edges[category] = parts.length ? mergeGeometries(parts, false) : null;
+        parts.forEach((geometry) => geometry.dispose());
+      }
+      return {
+        scene: sceneCopy,
+        dimensions: [size.x * scalar, size.y * scalar, size.z * scalar],
+        offset: [-center.x * scalar, -box.min.y * scalar, -center.z * scalar],
+        scale: scalar,
+        materialCopies,
+        edges,
       };
-      object.material = Array.isArray(object.material)
-        ? object.material.map(cloneMaterial)
-        : cloneMaterial(object.material);
-      object.castShadow = true;
-      object.receiveShadow = true;
-      object.userData.initialVisibility = object.visible;
-    });
-    const box = new Box3().setFromObject(sceneCopy);
-    const size = box.getSize(new Vector3());
-    const center = box.getCenter(new Vector3());
-    const scalar = 10 / Math.max(size.x, size.y, size.z, 0.001);
-    return {
-      scene: sceneCopy,
-      dimensions: [size.x * scalar, size.y * scalar, size.z * scalar],
-      offset: [-center.x * scalar, -box.min.y * scalar, -center.z * scalar],
-      scale: scalar,
-      materialCopies,
-    };
-  }, [gltf.scene]);
+    }, [gltf.scene]);
 
   useEffect(
     () => () => {
       materialCopies.forEach((material) => material.dispose());
+      Object.values(edges).forEach((geometry) => geometry?.dispose());
     },
-    [materialCopies],
+    [materialCopies, edges],
   );
   useEffect(() => {
     let structures = 0;
@@ -180,14 +220,6 @@ function Architecture({
       object.visible =
         object.userData.initialVisibility &&
         !(mode === "structure" && structures && /^Facade/i.test(object.name));
-      const materials = Array.isArray(object.material)
-        ? object.material
-        : [object.material];
-      for (const material of materials)
-        material.wireframe =
-          mode === "structure" &&
-          !structures &&
-          !/^Landscape/i.test(object.name);
     });
     invalidate();
   }, [scene, mode, invalidate]);
@@ -200,6 +232,37 @@ function Architecture({
     <>
       <group position={offset} scale={scale}>
         <primitive object={scene} dispose={null} />
+        {edges.structure && (
+          <lineSegments
+            geometry={edges.structure}
+            renderOrder={2}
+            dispose={null}
+          >
+            <lineBasicMaterial
+              color="#56605a"
+              transparent
+              opacity={0.42}
+              depthWrite={false}
+              toneMapped={false}
+            />
+          </lineSegments>
+        )}
+        {edges.facade && (
+          <lineSegments
+            geometry={edges.facade}
+            visible={mode !== "structure"}
+            renderOrder={2}
+            dispose={null}
+          >
+            <lineBasicMaterial
+              color="#69716f"
+              transparent
+              opacity={0.28}
+              depthWrite={false}
+              toneMapped={false}
+            />
+          </lineSegments>
+        )}
       </group>
       <CameraRig
         dimensions={dimensions}
@@ -245,14 +308,19 @@ function SceneLifecycle({ surfaceRef, controlsRef, onFailure, spinning }) {
       data.frames = String(frames.current);
       data.drawCalls = String(gl.info.render.calls);
       data.triangles = String(gl.info.render.triangles);
+      data.lines = String(gl.info.render.lines);
+      data.projection = camera.isOrthographicCamera
+        ? "orthographic"
+        : "perspective";
+      data.zoom = camera.zoom.toFixed(3);
       data.azimuth = String(
         controlsRef.current?.getAzimuthalAngle().toFixed(3) || 0,
       );
-      data.distance = String(
-        controlsRef.current
-          ? camera.position.distanceTo(controlsRef.current.target).toFixed(3)
-          : 0,
-      );
+      const cameraDistance = controlsRef.current
+        ? camera.position.distanceTo(controlsRef.current.target)
+        : 0;
+      data.cameraDistance = cameraDistance.toFixed(3);
+      data.distance = cameraDistance.toFixed(3);
     });
   }, [gl, camera, controlsRef, surfaceRef, spinning]);
   return null;
@@ -300,53 +368,34 @@ export default function SceneCanvas({
       <Canvas
         frameloop={active && rotating && view !== "top" ? "always" : "demand"}
         dpr={lowPower ? 1 : [1, 1.5]}
-        camera={{ position: [15, 13, 18], fov: 38, near: 0.1, far: 180 }}
-        shadows={PCFSoftShadowMap}
+        orthographic
+        camera={{ position: [20, 20, 20], zoom: 40, near: 0.1, far: 100 }}
         gl={{
           antialias: !lowPower,
           alpha: false,
           powerPreference: "low-power",
           toneMapping: ACESFilmicToneMapping,
-          toneMappingExposure: 1.08,
+          toneMappingExposure: 0.98,
         }}
         fallback={<span>Архитектурная концепция</span>}
       >
-        <color attach="background" args={[SKY]} />
-        <ambientLight intensity={0.7} />
+        <color attach="background" args={[PAPER]} />
+        <ambientLight intensity={1.25} />
         <hemisphereLight
-          color="#eef5ff"
-          groundColor="#c8b9a5"
-          intensity={1.1}
+          color="#fffdf8"
+          groundColor="#d0d0c8"
+          intensity={0.55}
         />
         <directionalLight
-          position={[8, 16, 9]}
-          intensity={3.1}
-          color="#fff3df"
-          castShadow
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
-          shadow-camera-left={-9}
-          shadow-camera-right={9}
-          shadow-camera-top={9}
-          shadow-camera-bottom={-9}
-          shadow-camera-near={0.1}
-          shadow-camera-far={50}
-          shadow-normalBias={0.035}
-          shadow-bias={-0.00015}
+          position={[8, 13, 7]}
+          intensity={1.7}
+          color="#fffdf8"
         />
         <directionalLight
           position={[-8, 6, -5]}
-          intensity={1.2}
-          color="#dceafb"
+          intensity={0.55}
+          color="#ebeeec"
         />
-        <mesh
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[0, -0.025, 0]}
-          receiveShadow
-        >
-          <planeGeometry args={[200, 200]} />
-          <meshStandardMaterial color={SKY} roughness={1} />
-        </mesh>
         <Suspense fallback={null}>
           <Architecture
             model={model}
@@ -372,5 +421,5 @@ export default function SceneCanvas({
 }
 
 export function clearModelCache(model) {
-  useGLTF.clear(`${import.meta.env.BASE_URL}models/${model}.glb`);
+  useGLTF.clear(modelUrl(model));
 }

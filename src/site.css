@@ -38,19 +38,25 @@
 }
 
 :root {
-  font-family: "Onest", Arial, sans-serif;
-  color: #162c40;
-  background: #f7f8f9;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  color: #17201f;
+  background: #f2f0e9;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --navy: #162c40;
-  --muted: #536573;
-  --paper: #f7f8f9;
-  --line: #d6dfe5;
-  --accent: #ad4927;
-  --light: #eaf0f3;
-  --gutter: clamp(20px, 4.3vw, 76px);
-  --max: 1500px;
+  --navy: #17201f;
+  --muted: #626b67;
+  --paper: #f2f0e9;
+  --line: #cfd1c8;
+  --accent: #b94e26;
+  --light: #e8e4da;
+  --gutter: clamp(20px, 4vw, 64px);
+  --max: 1360px;
   color-scheme: light;
 }
 * {
@@ -58,7 +64,7 @@
 }
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 135px;
+  scroll-padding-top: 100px;
 }
 body {
   margin: 0;
@@ -108,8 +114,8 @@ p {
 h1,
 h2,
 h3 {
-  font-family: "Manrope", Arial, sans-serif;
-  font-weight: 500;
+  font-family: inherit;
+  font-weight: 600;
   letter-spacing: -0.055em;
   text-wrap: balance;
 }
@@ -154,10 +160,10 @@ a:hover {
   padding-bottom: 104px;
 }
 .section-muted {
-  background: #eaf0f3;
+  background: #e8e4da;
 }
 .eyebrow {
-  font-family: "Onest", Arial, sans-serif;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.12em;
@@ -192,20 +198,20 @@ a:hover {
   align-items: center;
   justify-content: space-between;
   gap: 28px;
-  border: 1px solid var(--navy);
-  background: var(--navy);
+  border: 1px solid var(--accent);
+  background: var(--accent);
   color: white;
   padding: 17px 24px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   transition:
     background 0.2s,
     color 0.2s,
     border-color 0.2s;
 }
 .button:hover {
-  background: #27475f;
-  border-color: #27475f;
+  background: #943e1e;
+  border-color: #943e1e;
   color: white;
 }
 .button-light {
@@ -214,14 +220,14 @@ a:hover {
   color: var(--navy);
 }
 .button-light:hover {
-  background: #dce6ed;
+  background: #e8e4da;
   color: var(--navy);
-  border-color: #dce6ed;
+  border-color: #e8e4da;
 }
 .button-secondary {
   background: transparent;
   color: var(--navy);
-  border-color: #9eaeb9;
+  border-color: #a8ada6;
 }
 .skip-link {
   position: fixed;
@@ -242,9 +248,8 @@ a:hover {
   position: sticky;
   z-index: 100;
   top: 0;
-  background: rgba(247, 248, 249, 0.97);
+  background: rgba(242, 240, 233, 0.96);
   border-bottom: 1px solid var(--line);
-  backdrop-filter: blur(12px);
 }
 .header-top {
   display: flex;
@@ -264,12 +269,12 @@ a:hover {
   align-items: center;
   justify-content: space-between;
   gap: 26px;
-  min-height: 87px;
+  min-height: 82px;
 }
 .brand {
   display: block;
   flex-shrink: 0;
-  width: 116px;
+  width: 132px;
   line-height: 0;
 }
 .brand img {
@@ -328,7 +333,7 @@ a:hover {
   padding: 18px var(--gutter) 30px;
   background: var(--navy);
   color: white;
-  box-shadow: 0 16px 32px #162c4026;
+  box-shadow: 0 16px 32px #17201f26;
 }
 .mobile-nav a {
   display: flex;
@@ -340,21 +345,25 @@ a:hover {
   min-height: 48px;
 }
 .home-hero {
-  background: linear-gradient(110deg, #f7f8f9 38%, #edf1f3 100%);
+  background:
+    linear-gradient(#17201f08 1px, transparent 1px),
+    linear-gradient(90deg, #17201f08 1px, transparent 1px), var(--paper);
+  background-size: 110px 110px;
 }
 .hero-layout {
   display: grid;
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-  gap: 40px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(40px, 5vw, 80px);
   align-items: center;
-  padding-top: 54px;
-  padding-bottom: 55px;
+  padding-top: 90px;
+  padding-bottom: 74px;
 }
 .hero-copy h1 {
-  font-size: clamp(66px, 6.1vw, 94px);
-  line-height: 1.025;
-  letter-spacing: -0.07em;
-  margin-bottom: 26px;
+  font-size: clamp(58px, 6.35vw, 104px);
+  line-height: 0.94;
+  font-weight: 650;
+  letter-spacing: -0.065em;
+  margin-bottom: 22px;
 }
 .hero-copy .eyebrow {
   display: flex;
@@ -368,16 +377,116 @@ a:hover {
   display: inline-block;
 }
 .hero-lead {
-  font-size: 15px;
-  max-width: 450px;
+  font-size: 18px;
+  max-width: 600px;
   color: var(--muted);
-  margin-bottom: 29px;
+  margin-bottom: 32px;
 }
 .hero-actions {
   display: flex;
   align-items: center;
-  gap: 22px;
+  gap: 12px;
   flex-wrap: wrap;
+}
+.hero-thesis {
+  color: var(--accent);
+  font-size: clamp(34px, 3.8vw, 60px);
+  font-weight: 400;
+  line-height: 1.06;
+  letter-spacing: -0.055em;
+  margin-bottom: 28px;
+}
+.hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 11px;
+  margin-top: 36px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.hero-tags span + span::before {
+  content: "·";
+  margin-right: 11px;
+  color: var(--accent);
+}
+.hero-visual {
+  margin: 0;
+  min-width: 0;
+}
+.hero-visual > img {
+  width: 100%;
+  height: clamp(480px, 42vw, 650px);
+  object-fit: cover;
+  object-position: 67% center;
+}
+.hero-visual figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  border-top: 1px solid var(--line);
+  margin-top: 18px;
+  padding-top: 12px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.contract-scope {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+.contract-scope li {
+  display: grid;
+  grid-template-columns: 45px minmax(0, 0.9fr) minmax(0, 1.25fr) 44px;
+  align-items: start;
+  gap: 30px;
+  padding: 30px 0;
+  border-bottom: 1px solid var(--line);
+}
+.scope-index {
+  font:
+    12px ui-monospace,
+    monospace;
+  color: var(--accent);
+  padding-top: 6px;
+}
+.contract-scope h3 {
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.25;
+}
+.contract-scope p {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+  max-width: 500px;
+}
+.scope-more {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+}
+.work-composition {
+  margin-top: 48px;
+}
+.work-composition > div {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 25px;
+}
+.work-composition a {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding-block: 12px;
+  min-height: 44px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.general-scope {
+  padding-top: 30px;
 }
 .hero-model {
   min-width: 0;
@@ -430,7 +539,7 @@ a:hover {
   display: flex;
   gap: 23px;
 }
-.hero-bottom > a {
+.hero-bottom > a:not(.text-link) {
   font-size: 25px;
   min-width: 44px;
   min-height: 44px;
@@ -466,27 +575,27 @@ a:hover {
 }
 .service-card {
   padding: 32px 32px 26px;
-  background: #e9eef2;
+  background: #e8e4da;
   display: flex;
   flex-direction: column;
   min-height: 440px;
   transition: background 0.2s;
 }
 .service-card:hover {
-  background: #dce5ed;
+  background: #dedbd2;
   color: var(--navy);
 }
 .service-card-1 {
-  background: #e8ebe7;
+  background: #e8e4da;
 }
 .service-card-1:hover {
-  background: #dce2d9;
+  background: #dedbd2;
 }
 .service-card-2 {
-  background: #e9e4df;
+  background: #e8e4da;
 }
 .service-card-2:hover {
-  background: #e2d7cd;
+  background: #dedbd2;
 }
 .service-graphic {
   display: flex;
@@ -494,7 +603,7 @@ a:hover {
   justify-content: flex-end;
   height: 140px;
   margin-bottom: 22px;
-  color: #627789;
+  color: #69716f;
 }
 .service-graphic svg {
   width: 185px;
@@ -537,14 +646,14 @@ a:hover {
   font-size: 15px;
 }
 .dark-section {
-  background: #162c40;
+  background: #17201f;
   color: #fff;
 }
 .on-dark .eyebrow {
-  color: #a8bac7;
+  color: #aeb6b2;
 }
 .on-dark > div:nth-child(2) > p {
-  color: #b7c5d0;
+  color: #bec5bf;
 }
 .on-dark .text-link {
   color: #fff;
@@ -561,7 +670,7 @@ a:hover {
 }
 .control-symbol {
   font-size: 40px;
-  color: #bfa185;
+  color: #aeb6b2;
   display: block;
   margin-bottom: 24px;
 }
@@ -570,7 +679,7 @@ a:hover {
   letter-spacing: -0.025em;
 }
 .control-item p {
-  color: #b7c5d0;
+  color: #bec5bf;
   font-size: 14px;
   max-width: 350px;
 }
@@ -584,7 +693,7 @@ a:hover {
 }
 .project-image {
   aspect-ratio: 1.27;
-  background: #e8ecef;
+  background: #e8e4da;
   position: relative;
   overflow: hidden;
 }
@@ -595,14 +704,14 @@ a:hover {
   transition: transform 0.45s;
 }
 .project-card:hover .project-image img {
-  transform: scale(1.04);
+  transform: scale(1.015);
 }
 .project-badge {
   position: absolute;
   left: 17px;
   top: 17px;
   padding: 8px 11px;
-  background: #f7f8f9e8;
+  background: #f2f0e9e8;
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -645,7 +754,7 @@ a:hover {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 .workflow li {
-  border-top: 1px solid #aabcc9;
+  border-top: 1px solid #a8ada6;
   padding-top: 23px;
   min-width: 0;
 }
@@ -694,8 +803,9 @@ a:hover {
   margin-top: auto;
 }
 .cta-band {
-  background: #ad4927;
-  color: white;
+  background: #e8e4da;
+  color: var(--navy);
+  border-top: 1px solid var(--line);
 }
 .cta-content {
   display: flex;
@@ -718,15 +828,18 @@ a:hover {
   margin-bottom: 0;
 }
 .cta-content .eyebrow {
-  color: #f4d4c5;
+  color: var(--muted);
   margin-bottom: 22px;
 }
 .cta-content > .button {
   flex-shrink: 0;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 .site-footer {
-  background: #102436;
-  color: #f5f8fa;
+  background: #17201f;
+  color: #fffdf8;
   padding-top: 65px;
 }
 .footer-grid {
@@ -748,7 +861,7 @@ a:hover {
     sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.09em;
-  color: #a9bdcb;
+  color: #aeb6b2;
   margin-bottom: 28px;
 }
 .footer-grid > div > a:not(.brand) {
@@ -760,12 +873,12 @@ a:hover {
 }
 .footer-grid p {
   font-size: 12px;
-  color: #a9bdcb;
+  color: #aeb6b2;
 }
 .footer-grid address {
   font-size: 12px;
   line-height: 1.6;
-  color: #a9bdcb;
+  color: #aeb6b2;
   font-style: normal;
   margin: 14px 0;
 }
@@ -778,7 +891,7 @@ a:hover {
   display: flex;
   justify-content: space-between;
   gap: 25px;
-  color: #a9bdcb;
+  color: #aeb6b2;
   font-size: 10px;
 }
 .footer-grid a:hover,
@@ -848,7 +961,7 @@ a:hover {
 .service-feature {
   display: grid;
   grid-template-columns: 1.25fr 0.75fr;
-  background: #e8edf0;
+  background: #e8e4da;
   align-items: center;
   overflow: hidden;
 }
@@ -893,7 +1006,7 @@ a:hover {
   margin-bottom: 25px;
 }
 .result-section {
-  background: #dfe8ed;
+  background: #e8e4da;
 }
 .result-layout {
   display: grid;
@@ -915,7 +1028,7 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 22px;
-  border-bottom: 1px solid #b8c9d4;
+  border-bottom: 1px solid #bcc4be;
   padding: 22px 0;
   font-size: 16px;
 }
@@ -998,12 +1111,12 @@ a:hover {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   margin-bottom: 0;
-  border: 1px solid #c4d2dc;
+  border: 1px solid #bcc4be;
 }
 .concept-tabs button {
   background: transparent;
   border: 0;
-  border-right: 1px solid #c4d2dc;
+  border-right: 1px solid #bcc4be;
   padding: 22px 25px;
   min-height: 60px;
   font-size: 13px;
@@ -1019,7 +1132,7 @@ a:hover {
   color: white;
 }
 .concept-tabs button:hover:not([aria-pressed="true"]) {
-  background: #e1e8ed;
+  background: #e8e4da;
 }
 .concept-description {
   display: grid;
@@ -1065,7 +1178,7 @@ a:hover {
   border-color: var(--navy);
 }
 .filter-bar button:hover:not([aria-pressed="true"]) {
-  background: #e3ebf0;
+  background: #e8e4da;
 }
 .projects-catalog {
   padding-bottom: 20px;
@@ -1103,7 +1216,7 @@ a:hover {
   font-size: 23px;
 }
 .about-band {
-  background: #dae3e9;
+  background: #dedbd2;
 }
 .about-band-inner {
   display: grid;
@@ -1160,7 +1273,7 @@ a:hover {
 }
 .principles p {
   font-size: 14px;
-  color: #b7c5d0;
+  color: #bec5bf;
   max-width: 430px;
 }
 .about-contact {
@@ -1209,7 +1322,7 @@ a:hover {
 }
 .company-card {
   padding: 45px;
-  background: #e5edf2;
+  background: #e8e4da;
 }
 .company-card h2 {
   font-size: 39px;
@@ -1220,7 +1333,7 @@ a:hover {
 .company-card dl > div {
   display: grid;
   grid-template-columns: 100px 1fr;
-  border-top: 1px solid #c5d3dd;
+  border-top: 1px solid #bcc4be;
   padding-block: 16px;
   font-size: 13px;
   line-height: 1.6;
@@ -1294,7 +1407,7 @@ a:hover {
   color: var(--muted);
 }
 .brief-form {
-  background: #e6edf1;
+  background: #e8e4da;
   padding: 44px;
 }
 .brief-form h2 {
@@ -1317,8 +1430,8 @@ a:hover {
   display: block;
   width: 100%;
   border: 0;
-  border-bottom: 1px solid #aebfc9;
-  background: #f8fafb;
+  border-bottom: 1px solid #aeb6b2;
+  background: #fffdf8;
   color: var(--navy);
   border-radius: 0;
   padding: 14px 13px;
@@ -1415,7 +1528,7 @@ a:hover {
 }
 .article-takeaway {
   padding: 35px;
-  background: #e6edf2;
+  background: #e8e4da;
   margin-top: 55px;
 }
 .article-takeaway p {
@@ -1891,9 +2004,7 @@ a:hover {
     padding-top: 5px;
   }
   .control-item {
-    display: grid;
-    grid-template-columns: 40px 1fr;
-    gap: 0 22px;
+    display: block;
     padding-top: 26px;
   }
   .control-symbol {
@@ -2134,7 +2245,7 @@ a:hover {
   }
   .concept-tabs button {
     border-right: 0;
-    border-bottom: 1px solid #c4d2dc;
+    border-bottom: 1px solid #bcc4be;
     padding: 15px 18px;
     min-height: 48px;
     font-size: 12px;
@@ -2327,6 +2438,75 @@ a:hover {
   }
   .company-card {
     padding: 20px;
+  }
+}
+@media (max-width: 1000px) {
+  .contract-scope li {
+    grid-template-columns: 35px minmax(0, 1fr) minmax(0, 1.1fr) 44px;
+    gap: 18px;
+  }
+  .contract-scope h3 {
+    font-size: 23px;
+  }
+  .work-composition > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 680px) {
+  .hero-copy h1 {
+    font-size: clamp(44px, 11.8vw, 74px);
+    margin-bottom: 19px;
+  }
+  .hero-thesis {
+    font-size: clamp(32px, 8vw, 42px);
+    margin-bottom: 24px;
+  }
+  .hero-tags {
+    margin-top: 24px;
+    font-size: 10px;
+  }
+  .hero-visual > img {
+    height: 390px;
+  }
+  .hero-visual figcaption {
+    font-size: 9px;
+    gap: 10px;
+  }
+  .hero-bottom {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .hero-bottom > .text-link {
+    padding: 0;
+    font-size: 11px;
+  }
+  .contract-scope li {
+    grid-template-columns: 25px minmax(0, 1fr) 36px;
+    gap: 10px 14px;
+    padding: 25px 0;
+  }
+  .contract-scope h3 {
+    font-size: 24px;
+  }
+  .contract-scope p {
+    grid-column: 2 / 4;
+    font-size: 14px;
+  }
+  .scope-more {
+    grid-column: 3;
+    grid-row: 1;
+    width: 44px;
+  }
+  .work-composition {
+    margin-top: 34px;
+  }
+  .work-composition > div {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+  .work-composition a {
+    font-size: 15px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

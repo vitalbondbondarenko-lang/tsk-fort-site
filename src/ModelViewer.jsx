@@ -96,7 +96,7 @@ function Viewer({ model, compact }) {
   const [rotating, setRotating] = useState(false);
   const [status, setStatus] = useState("poster");
   const [mode, setMode] = useState("facade");
-  const [view, setView] = useState("perspective");
+  const [view, setView] = useState("isometric");
   const [attempt, setAttempt] = useState(0);
   const [command, setCommand] = useState(null);
   const active = visible && documentVisible;
@@ -185,11 +185,11 @@ function Viewer({ model, compact }) {
   }, []);
 
   const changeView = () => {
-    setView((previous) => (previous === "perspective" ? "top" : "perspective"));
+    setView((previous) => (previous === "isometric" ? "top" : "isometric"));
     setRotating(false);
   };
   const reset = () => {
-    setView("perspective");
+    setView("isometric");
     issueCommand("reset");
   };
   const onKeyDown = (event) => {
@@ -208,7 +208,7 @@ function Viewer({ model, compact }) {
     if (action) {
       event.preventDefault();
       setRotating(false);
-      if (action === "reset") setView("perspective");
+      if (action === "reset") setView("isometric");
       issueCommand(action);
     } else if (event.code === "Space") {
       event.preventDefault();
@@ -238,10 +238,10 @@ function Viewer({ model, compact }) {
       >
         <img
           className="fort-model__poster"
-          src={`${base}models/${model}.jpg`}
+          src={`${base}models/${model}.jpg?v=engineering-20260906`}
           alt={`Архитектурная концепция: ${modelNames[model].toLowerCase()}`}
-          width="1400"
-          height="1100"
+          width="1600"
+          height="1200"
           loading="lazy"
           decoding="async"
           aria-hidden={ready}
@@ -267,21 +267,17 @@ function Viewer({ model, compact }) {
           <span className="fort-model__caption-dot" /> Архитектурная концепция
         </div>
         <div className="fort-model__orientation" aria-hidden="true">
-          <span>С</span>
-          <svg viewBox="0 0 40 40" fill="none">
-            <path d="M20 3 13 29l7-5 7 5Z" fill="currentColor" />
-            <path d="M20 3v21" stroke="#e8edf0" />
-          </svg>
+          <span>{view === "top" ? "Вид сверху" : "Аксонометрия"}</span>
         </div>
         {status === "loading" && (
           <div className="fort-model__loading" role="status">
             <span />
-            Подготавливаем макет
+            Загружаем модель
           </div>
         )}
         {status === "fallback" && (
           <div className="fort-model__fallback">
-            <span>Архитектурный макет</span>
+            <span>Архитектурная модель</span>
             <button type="button" onClick={retry}>
               Открыть 3D <span aria-hidden="true">↗</span>
             </button>
@@ -290,7 +286,7 @@ function Viewer({ model, compact }) {
         <div
           className="fort-model__toolbar"
           role="group"
-          aria-label="Управление архитектурным макетом"
+          aria-label="Управление архитектурной моделью"
         >
           <button
             type="button"
@@ -352,7 +348,7 @@ function Viewer({ model, compact }) {
             aria-pressed={mode === "structure"}
           >
             <Icon name="cube" />
-            <span>Каркас</span>
+            <span>Конструкции</span>
           </button>
           <button
             type="button"
@@ -360,20 +356,18 @@ function Viewer({ model, compact }) {
             onClick={changeView}
             disabled={!ready}
             aria-label={
-              view === "perspective"
-                ? "Посмотреть сверху"
-                : "Вернуть перспективу"
+              view === "isometric" ? "Посмотреть сверху" : "Вернуть изометрию"
             }
             aria-pressed={view === "top"}
           >
-            <Icon name={view === "perspective" ? "top" : "angle"} />
-            <span>{view === "perspective" ? "Сверху" : "Перспектива"}</span>
+            <Icon name={view === "isometric" ? "top" : "angle"} />
+            <span>{view === "isometric" ? "Сверху" : "Изометрия"}</span>
           </button>
         </div>
       </div>
       <div className="fort-model__footer">
         <span>{modelNames[model]}</span>
-        <span>Вращайте макет · приближайте детали</span>
+        <span>Поворот · масштаб · конструктивная схема</span>
       </div>
     </div>
   );
