@@ -31,6 +31,10 @@ try {
     const res = await page.goto(base + route.slice(1), {
       waitUntil: "networkidle",
     });
+    const rawHTML = await res.text();
+    const rawCanonical = rawHTML.match(
+      /<link\s+rel="canonical"\s+href="([^"]+)"/,
+    )?.[1];
     const data = await page.evaluate(() => ({
       title: document.title,
       h1: document.querySelectorAll("h1").length,
@@ -46,7 +50,11 @@ try {
     check(data.text > 300, `${route} sparse content`);
     check(!data.overflow, `${route} desktop overflow`);
     check(!data.broken.length, `${route} broken images`);
-    result.pages.push({ route, status: res.status(), ...data });
+    check(
+      rawCanonical === data.canonical,
+      `${route} prerendered canonical differs from browser`,
+    );
+    result.pages.push({ route, status: res.status(), rawCanonical, ...data });
   }
   await page.goto(base, { waitUntil: "networkidle" });
   await page.locator("[data-viewer]").waitFor({ state: "visible" });

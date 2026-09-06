@@ -38,12 +38,18 @@ for (const path of [...routes, "/404/"]) {
       /(<meta\s+name="description"\s+content=")[^"]*(")/,
       `$1${escape(description)}$2`,
     )
-    .replace(/(<link rel="canonical" href=")[^"]*(")/, `$1${url}$2`)
+    .replace(/(<link\s+rel="canonical"\s+href=")[^"]*(")/, `$1${url}$2`)
     .replace("<!--app-html-->", render(path))
     .replace(
       "</head>",
       `<meta property="og:type" content="website"/><meta property="og:locale" content="ru_RU"/><meta property="og:site_name" content="ТСК ФОРТ"/><meta property="og:title" content="${escape(title)}"/><meta property="og:description" content="${escape(description)}"/><meta property="og:url" content="${url}"/><meta property="og:image" content="${SITE_URL}models/apartment.jpg"/><script type="application/ld+json">${JSON.stringify(schema)}</script>${path === "/404/" ? '<meta name="robots" content="noindex"/>' : ""}</head>`,
     );
+  const canonical = html.match(
+    /<link\s+rel="canonical"\s+href="([^"]+)"/,
+  )?.[1];
+  if (canonical !== url) {
+    throw new Error(`Incorrect prerendered canonical for ${path}: ${canonical}`);
+  }
   const out =
     path === "/404/"
       ? resolve("dist/404.html")
