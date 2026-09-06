@@ -3,4 +3,7 @@ dist/
 .DS_Store
 qa/
 source-assets/*.png
-
+source-assets/models/
+.ssr/
+task_plan.md
+research-content.md

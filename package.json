@@ -5,14 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && vite build --ssr src/prerender.jsx --outDir .ssr && node scripts/prerender.mjs",
     "preview": "vite preview",
-    "qa": "node scripts/qa.mjs"
+    "qa": "node scripts/qa-site.mjs"
   },
   "dependencies": {
+    "@react-three/drei": "10.7.8",
+    "@react-three/fiber": "9.7.0",
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "three": "0.185.1",
+    "vite": "latest"
   }
 }

@@ -1,0 +1,330 @@
+.fort-model {
+  width: 100%;
+  min-width: 0;
+  color: #162c40;
+  font-family: inherit;
+}
+
+.fort-model,
+.fort-model * {
+  box-sizing: border-box;
+}
+
+.fort-model__stage {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: clamp(480px, 48vw, 720px);
+  overflow: hidden;
+  background: #e8edf0;
+  border: 1px solid rgba(22, 44, 64, 0.08);
+  outline-offset: 4px;
+}
+
+.fort-model--compact .fort-model__stage {
+  height: clamp(380px, 33vw, 510px);
+}
+.fort-model__poster,
+.fort-model__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.fort-model__poster {
+  object-fit: contain;
+  z-index: 0;
+  opacity: 1;
+  transition: opacity 0.35s ease;
+}
+.fort-model__canvas {
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.fort-model[data-status="ready"] .fort-model__poster {
+  opacity: 0;
+  pointer-events: none;
+}
+.fort-model[data-status="ready"] .fort-model__canvas {
+  opacity: 1;
+}
+.fort-model__canvas canvas {
+  display: block;
+  touch-action: pan-y !important;
+  cursor: grab;
+}
+.fort-model__canvas canvas:active {
+  cursor: grabbing;
+}
+
+.fort-model__caption {
+  position: absolute;
+  top: 25px;
+  left: 27px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.fort-model__caption-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #bd5a34;
+}
+.fort-model__orientation {
+  position: absolute;
+  z-index: 3;
+  right: 25px;
+  top: 19px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: #496074;
+  pointer-events: none;
+}
+.fort-model__orientation span {
+  font-size: 9px;
+  font-weight: 600;
+}
+.fort-model__orientation svg {
+  width: 31px;
+  height: 31px;
+  transform: rotate(-28deg);
+}
+
+.fort-model__toolbar {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: 23px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  max-width: calc(100% - 32px);
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(22, 44, 64, 0.1);
+  border-radius: 7px;
+  box-shadow: 0 7px 24px rgba(22, 44, 64, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.fort-model__toolbar button,
+.fort-model__fallback button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  gap: 7px;
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px;
+  border: 0;
+  border-radius: 3px;
+  color: #162c40;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 550;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    color 0.18s ease,
+    background 0.18s ease;
+}
+
+.fort-model__toolbar button:hover:not(:disabled) {
+  color: #944021;
+  background: #f4ece6;
+}
+.fort-model__toolbar button[aria-pressed="true"]:not(.fort-model__rotation) {
+  background: #162c40;
+  color: #fff;
+}
+.fort-model__toolbar button:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+.fort-model__toolbar button:focus-visible,
+.fort-model__fallback button:focus-visible,
+.fort-model__stage:focus-visible {
+  outline: 2px solid #bd5a34;
+  outline-offset: 3px;
+}
+.fort-model__separator {
+  flex: 0 0 auto;
+  display: block;
+  width: 1px;
+  height: 23px;
+  margin-inline: 3px;
+  background: #dbe2e7;
+}
+.fort-model__toolbar svg {
+  flex: 0 0 auto;
+}
+.fort-model__loading {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 18px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #30495f;
+  box-shadow: 0 5px 25px #162c4010;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.fort-model__loading > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #bd5a34;
+  animation: fort-model-pulse 1.2s ease infinite;
+}
+.fort-model__fallback {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  bottom: 105px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 6px 8px 6px 18px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #d9e1e7;
+  border-radius: 4px;
+  color: #30495f;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.fort-model__fallback button {
+  background: #162c40;
+  color: #fff;
+  padding-inline: 15px;
+}
+.fort-model__fallback button:hover {
+  background: #bd5a34;
+}
+.fort-model__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 15px;
+  padding-top: 16px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.fort-model__footer > span:first-child {
+  font-weight: 600;
+}
+.fort-model__footer > span:last-child {
+  font-weight: 400;
+  font-size: 11px;
+  color: #596d7d;
+  text-align: right;
+}
+
+@keyframes fort-model-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 760px) {
+  .fort-model__stage {
+    height: 480px;
+  }
+  .fort-model--compact .fort-model__stage {
+    height: 400px;
+  }
+  .fort-model__caption {
+    top: 18px;
+    left: 17px;
+    font-size: 9px;
+    letter-spacing: 0.07em;
+  }
+  .fort-model__orientation {
+    top: 12px;
+    right: 13px;
+  }
+  .fort-model__toolbar {
+    bottom: 15px;
+    gap: 1px;
+    padding: 4px;
+    max-width: calc(100% - 20px);
+  }
+  .fort-model__toolbar button {
+    min-width: 44px;
+    padding-inline: 10px;
+  }
+  .fort-model__toolbar button span {
+    display: none;
+  }
+  .fort-model__separator {
+    margin-inline: 1px;
+  }
+  .fort-model__footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+    padding-top: 12px;
+  }
+  .fort-model__footer > span:last-child {
+    text-align: left;
+  }
+  .fort-model__fallback {
+    bottom: 84px;
+    padding-left: 12px;
+    gap: 8px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 360px) {
+  .fort-model__toolbar {
+    gap: 0;
+    max-width: calc(100% - 10px);
+    padding: 3px;
+  }
+  .fort-model__separator {
+    display: none;
+  }
+  .fort-model__toolbar button {
+    min-width: 44px;
+    padding-inline: 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fort-model__poster,
+  .fort-model__canvas,
+  .fort-model__toolbar button {
+    transition: none;
+  }
+  .fort-model__loading > span {
+    animation: none;
+  }
+}
