@@ -37,6 +37,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build
+        env:
+          SITE_BASE: /tsk-fort-site/
+          SITE_URL: https://vitalbondbondarenko-lang.github.io/tsk-fort-site/
         run: pnpm build
 
       - name: Configure Pages

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && vite build --ssr src/prerender.jsx --outDir .ssr && node scripts/prerender.mjs",
+    "build:hosting": "node scripts/build-hosting.mjs",
     "preview": "vite preview",
     "qa": "node scripts/qa-site.mjs"
   },

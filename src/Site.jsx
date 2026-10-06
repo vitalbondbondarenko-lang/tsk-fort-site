@@ -1,73 +1,48 @@
-import { useEffect, useState } from "react";
-import ModelViewer from "./ModelViewer.jsx";
+import { useState } from "react";
 import {
   SITE_BASE,
-  SITE_URL,
   asset,
   href,
   company,
   navigation,
   services,
-  concepts,
+  projects,
   process,
-  articles,
-  pageMeta,
 } from "./siteData.js";
 
-function currentPath() {
-  if (typeof window === "undefined") return "/";
-  const path = window.location.pathname
-    .replace(SITE_BASE, "/")
-    .replace(/index\.html$/, "");
-  return path.endsWith("/") ? path : `${path}/`;
-}
-function Arrow({ diagonal = false }) {
+const Arrow = () => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    aria-hidden="true"
+  >
+    <path d="M4 12h16m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="1.5" />
+  </svg>
+);
+function Link({ to = "/", children, ...props }) {
   return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d={diagonal ? "M5 19 19 5M5 5h14v14" : "M4 12h16m-6-6 6 6-6 6"}
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
-    </svg>
-  );
-}
-function Link({ to = "/", children, className = "", ...rest }) {
-  return (
-    <a href={href(to)} className={className} {...rest}>
+    <a href={href(to)} {...props}>
       {children}
     </a>
   );
 }
-function ButtonLink({
+function Button({
   to = "/contacts/",
-  children = "Обсудить объект",
-  light = false,
+  children = "Связаться с нами",
   secondary = false,
 }) {
   return (
-    <Link
-      to={to}
-      className={`button ${light ? "button-light" : ""} ${secondary ? "button-secondary" : ""}`}
-    >
+    <Link to={to} className={"button" + (secondary ? " secondary" : "")}>
       {children}
       <Arrow />
     </Link>
   );
 }
-function Brand({ footer = false }) {
+function Brand() {
   return (
-    <Link
-      className={`brand ${footer ? "brand-footer" : ""}`}
-      to="/"
-      aria-label="ТСК ФОРТ — главная"
-    >
+    <Link className="brand" aria-label="ТСК ФОРТ — главная">
       <img
         src={asset("assets/tsk-fort-logo.png")}
         width="576"
@@ -78,24 +53,9 @@ function Brand({ footer = false }) {
   );
 }
 function Header({ path }) {
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    setOpen(false);
-  }, [path]);
-  useEffect(() => {
-    if (!open) return;
-    const close = (e) => {
-      if (e.key === "Escape") {
-        setOpen(false);
-        document.querySelector(".menu-toggle")?.focus();
-      }
-    };
-    document.addEventListener("keydown", close);
-    return () => document.removeEventListener("keydown", close);
-  }, [open]);
   return (
-    <header className="site-header">
-      <div className="header-main container">
+    <header className="header">
+      <div className="container header-row">
         <Brand />
         <nav className="desktop-nav" aria-label="Основная навигация">
           {navigation.map(([label, to]) => (
@@ -108,77 +68,51 @@ function Header({ path }) {
             </Link>
           ))}
         </nav>
-        <a className="header-phone" href={`tel:${company.tel}`}>
-          {company.phone}
-          <span>Обсудить задачу</span>
+        <a className="header-contact" href={"mailto:" + company.email}>
+          {company.email}
+          <Arrow />
         </a>
-        <button
-          className="menu-toggle"
-          type="button"
-          aria-expanded={open}
-          aria-controls="mobile-nav"
-          onClick={() => setOpen(!open)}
-          aria-label={open ? "Закрыть меню" : "Открыть меню"}
-        >
-          {open ? (
-            "✕"
-          ) : (
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              aria-hidden="true"
-            >
-              <path
-                d="M3 7h18M3 12h18M3 17h18"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-            </svg>
-          )}
-        </button>
+        <details className="mobile-menu">
+          <summary aria-label="Меню сайта">
+            Меню<span aria-hidden="true">+</span>
+          </summary>
+          <nav aria-label="Мобильная навигация">
+            {navigation.map(([label, to]) => (
+              <Link
+                key={to}
+                to={to}
+                aria-current={path === to ? "page" : undefined}
+              >
+                {label}
+                <Arrow />
+              </Link>
+            ))}
+            <a href={"tel:" + company.tel}>{company.phone}</a>
+          </nav>
+        </details>
       </div>
-      <nav
-        id="mobile-nav"
-        className="mobile-nav"
-        aria-label="Мобильная навигация"
-        hidden={!open}
-      >
-        {[
-          ...navigation,
-          ["Как мы работаем", "/approach/"],
-          ["Журнал", "/journal/"],
-          ["Контакты", "/contacts/"],
-        ].map(([label, to]) => (
-          <Link to={to} key={to} onClick={() => setOpen(false)}>
-            {label}
-            <Arrow />
-          </Link>
-        ))}
-        <a href={`tel:${company.tel}`}>{company.phone}</a>
-      </nav>
     </header>
   );
 }
 function Footer() {
   return (
-    <footer className="site-footer">
+    <footer className="footer">
       <div className="container footer-grid">
         <div>
-          <Brand footer />
+          <Brand />
           <p>
+            Капитальный ремонт.
+            <br />
             Генеральный подряд.
             <br />
-            От проекта
-            <br />
-            до сдачи объекта.
+            Тюмень.
           </p>
         </div>
         <div>
-          <h2>Генподряд и состав работ</h2>
+          <h2>Направления</h2>
+          <Link to="/general-contracting/">Генеральный подряд</Link>
           {services.map((s) => (
-            <Link key={s.slug} to={`/${s.slug}/`}>
+            <Link key={s.slug} to={"/" + s.slug + "/"}>
               {s.title}
             </Link>
           ))}
@@ -186,61 +120,47 @@ function Footer() {
         <div>
           <h2>Компания</h2>
           {[
-            ["О компании", "/about/"],
-            ["Архитектурные концепции", "/projects/"],
-            ["Как мы работаем", "/approach/"],
-            ["Журнал", "/journal/"],
-            ["Документы", "/documents/"],
-          ].map(([label, to]) => (
-            <Link key={to} to={to}>
-              {label}
+            ...navigation.filter((x) => x[1] !== "/general-contracting/"),
+            ["Порядок работы", "/approach/"],
+            ["Реквизиты и документы", "/documents/"],
+          ].map(([t, h]) => (
+            <Link to={h} key={h}>
+              {t}
             </Link>
           ))}
         </div>
-        <div>
-          <h2>Контакты</h2>
-          <a className="footer-phone" href={`tel:${company.tel}`}>
-            {company.phone}
-          </a>
-          <a href={`mailto:${company.email}`}>{company.email}</a>
+        <div className="footer-contacts">
+          <h2>Для связи</h2>
+          <a href={"tel:" + company.tel}>{company.phone}</a>
+          <a href={"mailto:" + company.email}>{company.email}</a>
           <address>{company.address}</address>
-          <Link to="/contacts/" className="text-link">
-            Связаться
-            <Arrow />
-          </Link>
         </div>
       </div>
       <div className="container footer-bottom">
-        <span>© {new Date().getFullYear()} ТСК ФОРТ</span>
+        <span>© ТСК ФОРТ · 2026</span>
         <span>ИНН {company.inn}</span>
-        <Link to="/privacy/">Конфиденциальность</Link>
-        <span>От замысла к результату.</span>
+        <Link to="/privacy/">Информация о данных</Link>
       </div>
     </footer>
   );
 }
-function Breadcrumbs({ items = [] }) {
+function PageHead({ label, title, text }) {
   return (
-    <nav aria-label="Хлебные крошки" className="breadcrumbs">
-      <Link to="/">Главная</Link>
-      {items.map(([label, to], i) => (
-        <span key={label}>
-          <span aria-hidden="true">/</span>
-          {to ? (
-            <Link to={to}>{label}</Link>
-          ) : (
-            <span aria-current={i === items.length - 1 ? "page" : undefined}>
-              {label}
-            </span>
-          )}
-        </span>
-      ))}
-    </nav>
+    <section className="container page-head">
+      <nav className="breadcrumbs" aria-label="Хлебные крошки">
+        <Link>Главная</Link>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">{label}</span>
+      </nav>
+      <p className="eyebrow">{label}</p>
+      <h1>{title}</h1>
+      {text && <p className="page-lead">{text}</p>}
+    </section>
   );
 }
-function Heading({ label, title, text, link, dark = false }) {
+function SectionHead({ label, title, text, link }) {
   return (
-    <div className={`section-heading ${dark ? "on-dark" : ""}`}>
+    <div className="section-head">
       <div>
         <p className="eyebrow">{label}</p>
         <h2>{title}</h2>
@@ -248,7 +168,7 @@ function Heading({ label, title, text, link, dark = false }) {
       <div>
         {text && <p>{text}</p>}
         {link && (
-          <Link to={link[1]} className="text-link">
+          <Link className="text-link" to={link[1]}>
             {link[0]}
             <Arrow />
           </Link>
@@ -257,86 +177,95 @@ function Heading({ label, title, text, link, dark = false }) {
     </div>
   );
 }
-function ProjectCard({ item }) {
+function CTA() {
   return (
-    <Link className="project-card" to={`/projects/${item.slug}/`}>
-      <div className="project-image">
-        <img
-          src={asset(`models/${item.model}.jpg?v=engineering-20260906`)}
-          alt={`Архитектурная концепция: ${item.title.toLowerCase()}`}
-          width="1600"
-          height="1200"
-          loading="lazy"
-        />
-        <span className="project-badge">3D-концепция</span>
-        <span className="project-open">
-          <Arrow diagonal />
-        </span>
-      </div>
-      <div className="project-card-copy">
-        <span>{item.type}</span>
-        <h3>{item.title}</h3>
-        <p>{item.subtitle}</p>
-      </div>
-    </Link>
-  );
-}
-function ArticleCard({ article }) {
-  return (
-    <Link className="article-card" to={`/journal/${article.slug}/`}>
-      <div className="article-meta">
-        <span>{article.category}</span>
-        <span>{article.reading}</span>
-      </div>
-      <h3>{article.title}</h3>
-      <span className="text-link">
-        Читать материал
-        <Arrow diagonal />
-      </span>
-    </Link>
-  );
-}
-function CTA({
-  title = "Обсудим ваш следующий объект",
-  text = "Расскажите о задаче. Определим исходные данные, состав работ и следующий шаг.",
-}) {
-  return (
-    <section className="cta-band">
-      <div className="container cta-content">
+    <section className="contact-band">
+      <div className="container contact-band-inner">
         <div>
-          <p className="eyebrow">Начнём с разговора</p>
-          <h2>{title}</h2>
-          <p>{text}</p>
+          <p className="eyebrow">Заказчикам и партнёрам</p>
+          <h2>
+            Обсудим задачу
+            <br />
+            по вашему объекту.
+          </h2>
         </div>
-        <ButtonLink light />
+        <div>
+          <p>
+            Для знакомства с компанией, уточнения опыта или состава работ —
+            свяжитесь с нами.
+          </p>
+          <a className="contact-mail" href={"mailto:" + company.email}>
+            {company.email}
+            <Arrow />
+          </a>
+          <a className="text-link" href={"tel:" + company.tel}>
+            {company.phone}
+          </a>
+        </div>
       </div>
     </section>
   );
 }
-function FAQ({ questions }) {
-  return questions.length ? (
-    <section className="section container faq-section">
-      <Heading label="Вопросы заказчиков" title="Уточним главное" />
-      <div className="faq-list">
-        {questions.map(([q, a]) => (
-          <details key={q}>
-            <summary>
-              {q}
-              <span aria-hidden="true">+</span>
-            </summary>
-            <p>{a}</p>
-          </details>
-        ))}
-      </div>
-    </section>
-  ) : null;
-}
-function Workflow({ short = false }) {
+function ServiceRows() {
   return (
-    <ol className={`workflow ${short ? "workflow-short" : ""}`}>
+    <div className="service-rows">
+      {services.map((s) => (
+        <Link className="service-row" to={"/" + s.slug + "/"} key={s.slug}>
+          <h3>{s.title}</h3>
+          <p>{s.lead}</p>
+          <Arrow />
+        </Link>
+      ))}
+    </div>
+  );
+}
+function ProjectCard({ p }) {
+  return (
+    <Link to={"/projects/" + p.slug + "/"} className="project-card">
+      {p.image ? (
+        <div className="project-image">
+          <img
+            src={asset(p.image)}
+            alt={p.alt}
+            width={p.width || 1200}
+            height={p.height || 800}
+            loading="lazy"
+          />
+          <span>{p.category}</span>
+        </div>
+      ) : (
+        <div className="project-placeholder">
+          <span>Тюмень</span>
+          <strong>{p.title}</strong>
+          <span>{p.category}</span>
+        </div>
+      )}
+      <div className="project-info">
+        <div>
+          <p className="eyebrow">{p.location}</p>
+          <h3>{p.title}</h3>
+          <p>{p.scope}</p>
+        </div>
+        <Arrow />
+      </div>
+    </Link>
+  );
+}
+function ProjectGrid({ limit }) {
+  return (
+    <div className="project-grid">
+      {(limit ? projects.slice(0, limit) : projects).map((p) => (
+        <ProjectCard p={p} key={p.slug} />
+      ))}
+    </div>
+  );
+}
+function Workflow() {
+  return (
+    <ol className="workflow">
       {process.map(([title, text], i) => (
         <li key={title}>
-          <span className="step-number">{String(i + 1).padStart(2, "0")}</span>
+          <span className="step">{String(i + 1).padStart(2, "0")}</span>
           <h3>{title}</h3>
           <p>{text}</p>
         </li>
@@ -344,639 +273,330 @@ function Workflow({ short = false }) {
     </ol>
   );
 }
-function ContractScope() {
-  const scope = [
-    [
-      "01",
-      "Подготовка и проектирование",
-      "Исходные данные, проектные решения, объёмы и смета. Увязываем архитектуру, конструкции и инженерные системы.",
-      "/design/",
-    ],
-    [
-      "02",
-      "Строительство",
-      "Организация площадки, общестроительные и специальные работы. Координация подрядчиков, ресурсов и поставок.",
-      "/construction/",
-    ],
-    [
-      "03",
-      "Сопровождение и контроль",
-      "График, ПТО, контроль качества, согласование изменений и исполнительная документация на протяжении работ.",
-      "/support/",
-    ],
-    [
-      "04",
-      "Передача результата",
-      "Предъявление выполненных работ, закрытие замечаний и передача согласованного комплекта документов заказчику.",
-      "/approach/",
-    ],
-  ];
-  return (
-    <ol className="contract-scope">
-      {scope.map(([number, title, text, to]) => (
-        <li key={number}>
-          <span className="scope-index">{number}</span>
-          <h3>
-            <Link to={to}>{title}</Link>
-          </h3>
-          <p>{text}</p>
-          <Link
-            to={to}
-            className="scope-more"
-            aria-label={title + " — подробнее"}
-          >
-            <Arrow diagonal />
-          </Link>
-        </li>
-      ))}
-    </ol>
-  );
-}
 function Home() {
+  const featured = projects.find((p) => p.image);
   return (
     <>
-      <section className="home-hero">
-        <div className="container hero-layout">
-          <div className="hero-copy">
-            <p className="eyebrow">
-              <span className="status-dot" />
-              ТСК ФОРТ · Тюмень
-            </p>
-            <h1>
-              Генеральный
-              <br />
-              подряд
-            </h1>
-            <p className="hero-thesis">
-              От проекта
-              <br />
-              до сдачи объекта.
-            </p>
-            <p className="hero-lead">
-              Проектируем, строим и сопровождаем объект как единый процесс.
-              Организуем людей, работы и документы — от исходных данных до
-              передачи результата.
-            </p>
-            <div className="hero-actions">
-              <ButtonLink />
-              <ButtonLink to="/general-contracting/" secondary>
-                Что входит в генподряд
-              </ButtonLink>
-            </div>
-            <div className="hero-tags">
-              <span>Проектирование</span>
-              <span>Строительство</span>
-              <span>Сопровождение</span>
-            </div>
+      <section className="container home-hero">
+        <div className="hero-heading">
+          <p className="eyebrow">Строительная компания · Тюмень</p>
+          <h1>
+            Генеральный подряд.
+            <br />
+            <span>Капитальный ремонт.</span>
+          </h1>
+        </div>
+        <div className="hero-bottom">
+          <p>
+            Работаем с существующими зданиями.
+            <br />
+            Обследуем и проектируем, организуем ремонт,
+            <br className="desktop-break" /> сопровождаем работы документацией.
+          </p>
+          <div className="actions">
+            <Button to="/projects/">Объекты и опыт</Button>
+            <Button to="/about/" secondary>
+              О компании
+            </Button>
           </div>
-          <figure className="hero-visual">
+        </div>
+        {featured && (
+          <figure className="hero-photo">
             <img
-              src={asset("assets/hero-construction-concept.jpg")}
-              width="1536"
-              height="1024"
+              src={asset(featured.image)}
+              alt={featured.alt}
+              width={featured.width || 1200}
+              height={featured.height || 800}
               fetchPriority="high"
-              alt="Иллюстрация: инженеры с проектными чертежами на строительной площадке"
             />
             <figcaption>
-              <span>Организация полного цикла</span>
-              <span>Визуальная концепция</span>
+              <span>
+                {featured.title} · {featured.location}
+              </span>
+              <span>Фотография из материалов обследования</span>
             </figcaption>
           </figure>
-        </div>
-        <div className="container hero-bottom">
-          <span>Один генподрядчик. Согласованные этапы.</span>
-          <Link to="/general-contracting/" className="text-link">
-            Наш подход к генподряду
-            <Arrow />
-          </Link>
+        )}
+      </section>
+      <section className="section container">
+        <SectionHead
+          label="Наша работа"
+          title={
+            <>
+              Существующие здания.
+              <br />
+              Конкретные задачи.
+            </>
+          }
+          text="Основное внимание — капитальному ремонту многоквартирных домов: кровлям, фасадам и технической подготовке работ."
+        />
+        <ServiceRows />
+      </section>
+      <section className="section surface">
+        <div className="container">
+          <SectionHead
+            label="Объекты и опыт"
+            title="За каждым адресом — работа."
+            text="Показываем объекты и конкретный состав участия компании. Обследование и проектирование выделены отдельно от строительных работ."
+            link={["Смотреть объекты", "/projects/"]}
+          />
+          <ProjectGrid limit={4} />
         </div>
       </section>
-      <section className="section container" id="directions">
-        <Heading
+      <section className="section container">
+        <SectionHead
           label="Генеральный подряд"
           title={
             <>
-              Весь процесс.
-              <br />В одной системе.
-            </>
-          }
-          text="Для заказчика это единая организация работ: от проектной подготовки до сдачи. Состав участия и границы ответственности закрепляем в договоре."
-          link={["Подробнее о генподряде", "/general-contracting/"]}
-        />
-        <ContractScope />
-        <div className="work-composition">
-          <p className="eyebrow">В составе строительных работ</p>
-          <div>
-            {services
-              .filter((s) =>
-                [
-                  "capital-repair",
-                  "facades",
-                  "roofing",
-                  "engineering",
-                ].includes(s.slug),
-              )
-              .map((s) => (
-                <Link key={s.slug} to={"/" + s.slug + "/"}>
-                  {s.title}
-                  <Arrow diagonal />
-                </Link>
-              ))}
-          </div>
-        </div>
-      </section>
-      <section className="dark-section">
-        <div className="container section">
-          <Heading
-            dark
-            label="Управление объектом"
-            title={
-              <>
-                Проект. Площадка.
-                <br />
-                Контроль.
-              </>
-            }
-            text="Генподряд связывает решения проектировщиков, работу подрядчиков и требования заказчика. На каждом этапе — понятный объём, ответственный участник и контрольная точка."
-            link={["Организация работ", "/approach/"]}
-          />
-          <div className="control-grid">
-            {[
-              [
-                "До начала работ",
-                "Уточняем исходные данные, состав проекта, бюджет и последовательность строительства.",
-              ],
-              [
-                "На площадке",
-                "Координируем подрядчиков и поставки, контролируем объёмы, сроки и качество.",
-              ],
-              [
-                "При передаче",
-                "Предъявляем результат, закрываем замечания и комплектуем исполнительную документацию.",
-              ],
-            ].map(([h, p]) => (
-              <div className="control-item" key={h}>
-                <h3>{h}</h3>
-                <p>{p}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-      <section className="section container engineering-preview">
-        <Heading
-          label="Проектирование в составе генподряда"
-          title={
-            <>
-              От проектного решения
-              <br />к конструкции.
-            </>
-          }
-          text="Архитектура, несущая система и инженерные решения рассматриваются вместе. Трёхмерная модель помогает читать их взаимосвязь."
-          link={["Проектирование и 3D", "/design/"]}
-        />
-        <div className="project-grid">
-          {concepts.map((c) => (
-            <ProjectCard key={c.slug} item={c} />
-          ))}
-        </div>
-        <p className="caption">
-          Демонстрационные архитектурно-конструктивные модели. Не являются
-          рабочей документацией или перечнем построенных ТСК ФОРТ объектов.
-        </p>
-      </section>
-      <section className="section section-muted">
-        <div className="container">
-          <Heading
-            label="Этапы взаимодействия"
-            title="От задачи к выполненным работам"
-          />
-          <Workflow short />
-        </div>
-      </section>
-      <CTA
-        title="Обсудим ваш объект"
-        text="Пришлите проект, техническое задание или описание задачи. Определим состав генподрядных работ и исходные данные для расчёта."
-      />
-    </>
-  );
-}
-function ConceptSwitcher() {
-  const [selected, setSelected] = useState("apartment");
-  const item = concepts.find((c) => c.model === selected);
-  useEffect(() => {
-    const value = new URLSearchParams(window.location.search).get("model");
-    if (concepts.some((c) => c.model === value)) setSelected(value);
-  }, []);
-  function select(value) {
-    setSelected(value);
-    const url = new URL(window.location.href);
-    url.searchParams.set("model", value);
-    window.history.replaceState({}, "", url);
-  }
-  return (
-    <>
-      <div className="concept-tabs" role="group" aria-label="Выбрать модель">
-        {concepts.map((c) => (
-          <button
-            type="button"
-            key={c.model}
-            aria-pressed={selected === c.model}
-            onClick={() => select(c.model)}
-          >
-            {c.type}
-            <span>↗</span>
-          </button>
-        ))}
-      </div>
-      <ModelViewer key={selected} model={selected} />
-      <div className="concept-description">
-        <div>
-          <span className="eyebrow">Архитектурная концепция</span>
-          <h3>{item.title}</h3>
-        </div>
-        <p>{item.description}</p>
-        <Link className="text-link" to={`/projects/${item.slug}/`}>
-          Подробнее о концепции
-          <Arrow />
-        </Link>
-      </div>
-    </>
-  );
-}
-function ServicePage({ service }) {
-  const isDesign = service.slug === "design";
-  const isGeneral = service.slug === "general-contracting";
-  return (
-    <>
-      <section className="page-hero container">
-        <Breadcrumbs
-          items={
-            isGeneral
-              ? [[service.title]]
-              : [
-                  ["Генеральный подряд", "/general-contracting/"],
-                  [service.title],
-                ]
-          }
-        />
-        <div className="page-hero-grid">
-          <div>
-            <p className="eyebrow">{service.label}</p>
-            <h1>{service.title}</h1>
-            <p className="page-lead">{service.lead}</p>
-            <ButtonLink />
-          </div>
-          <div className="page-hero-aside">
-            <p>{service.intro}</p>
-            <span className="aside-rule" />
-            <span className="eyebrow">ТСК ФОРТ / Тюмень</span>
-            <p>
-              Состав услуг, сроки и стоимость определяются под конкретный
-              объект.
-            </p>
-          </div>
-        </div>
-      </section>
-      {isGeneral ? (
-        <section className="container general-scope" id="scope">
-          <Heading
-            label="Единая организация работ"
-            title="Что входит в генподряд"
-          />
-          <ContractScope />
-        </section>
-      ) : isDesign ? (
-        <section className="design-studio container">
-          <div className="studio-heading">
-            <div>
-              <p className="eyebrow">Архитектура и конструкции</p>
-              <h2>
-                Чёткая геометрия.
-                <br />
-                Связанные решения.
-              </h2>
-            </div>
-            <p>
-              Рассмотрите перекрытия, колонны, лестничные узлы и фасадные
-              элементы. Переключайте виды и состав модели.
-            </p>
-          </div>
-          <ConceptSwitcher />
-        </section>
-      ) : (
-        <section className="service-feature container">
-          <img
-            width="1600"
-            height="1200"
-            src={asset(`models/${service.model}.jpg?v=engineering-20260906`)}
-            alt={`Архитектурно-конструктивная модель для направления «${service.title}»`}
-          />
-          <div className="service-feature-note">
-            <span className="eyebrow">В центре внимания</span>
-            <h2>
-              {service.slug === "capital-repair"
-                ? "Состояние здания. Точность решения."
-                : "Результат складывается из деталей."}
-            </h2>
-            <p>{service.intro}</p>
-            <span className="caption">Архитектурная иллюстрация</span>
-          </div>
-        </section>
-      )}
-      <section className="section container">
-        <Heading label="Состав направления" title="Что входит в работу" />
-        <div className="scope-grid">
-          {service.tasks.map(([title, text]) => (
-            <article key={title}>
-              <span className="scope-mark" aria-hidden="true">
-                ↗
-              </span>
-              <h3>{title}</h3>
-              <p>{text}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-      <section className="section result-section">
-        <div className="container result-layout">
-          <div>
-            <p className="eyebrow">Результат для заказчика</p>
-            <h2>
-              Понятный объём.
+              Организация работ.
               <br />
-              Зафиксированный результат.
-            </h2>
-            <p>
-              Содержание комплекта уточняется на старте и закрепляется в
-              договоре.
-            </p>
-          </div>
-          <ul className="result-list">
-            {service.result.map((r) => (
-              <li key={r}>
-                <span aria-hidden="true">✓</span>
-                {r}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-      <section className="section container">
-        <Heading
-          label="Последовательность"
-          title="Как строится взаимодействие"
+              От задачи до результата.
+            </>
+          }
+          text="Подготовка, производство и документация — части одного процесса. Состав участия и ответственность определяем для каждого объекта."
+          link={["Наш подход", "/general-contracting/"]}
         />
-        <Workflow short />
-      </section>
-      <FAQ questions={service.questions} />
-      <section className="container related-services">
-        <span className="eyebrow">Другие составляющие генподряда</span>
-        <div>
-          {services
-            .filter(
-              (s) =>
-                ["construction", "design", "support"].includes(s.slug) &&
-                s.slug !== service.slug,
-            )
-            .map((s) => (
-              <Link key={s.slug} to={`/${s.slug}/`}>
-                {s.title}
-                <Arrow diagonal />
-              </Link>
-            ))}
-        </div>
-      </section>
-      <CTA
-        title={
-          isDesign
-            ? "Обсудим проект вашего здания"
-            : "Расскажите о вашем объекте"
-        }
-      />
-    </>
-  );
-}
-function ProjectsPage() {
-  const [filter, setFilter] = useState("all");
-  return (
-    <>
-      <section className="page-hero container">
-        <Breadcrumbs items={[["Проекты"]]} />
-        <p className="eyebrow">Проектирование в составе генподряда</p>
-        <h1>
-          Архитектура
-          <br />
-          <em>и конструкции.</em>
-        </h1>
-        <p className="page-lead">
-          Три типа зданий в инженерной аксонометрии. Перекрытия, колонны,
-          лестничные узлы и фасады — в единой объёмной модели.
-        </p>
-      </section>
-      <section className="container projects-catalog">
-        <div className="filter-bar" role="group" aria-label="Тип объекта">
-          {[
-            ["Все концепции", "all"],
-            ["Жильё", "apartment"],
-            ["Образование", "school"],
-            ["Медицина", "hospital"],
-          ].map(([label, value]) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={filter === value}
-              onClick={() => setFilter(value)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <div className="project-grid">
-          {concepts
-            .filter((c) => filter === "all" || filter === c.model)
-            .map((c) => (
-              <ProjectCard key={c.slug} item={c} />
-            ))}
-        </div>
-        <p className="caption">
-          Концептуальные модели иллюстрируют архитектурные решения и не являются
-          перечнем построенных ТСК ФОРТ объектов.
-        </p>
-      </section>
-      <section className="section container">
-        <Heading
-          label="Проектная подготовка"
-          title="От исходных данных к проекту"
-          text="Состав проектных решений определяется участком, заданием заказчика, исходными данными и согласованным объёмом документации."
-          link={["О проектировании", "/design/"]}
-        />
+        <Workflow />
       </section>
       <CTA />
     </>
   );
 }
-function ProjectPage({ item }) {
+function General() {
   return (
     <>
-      <section className="page-hero project-page-hero container">
-        <Breadcrumbs items={[["Проекты", "/projects/"], [item.title]]} />
-        <div className="project-heading">
+      <PageHead
+        label="Направления"
+        title="Генеральный подряд"
+        text="Объединяем подготовку, производство и сопровождение работ. В центре — капитальный ремонт существующих зданий."
+      />
+      <section className="container section compact">
+        <div className="intro-grid">
+          <h2>
+            Один объект.
+            <br />
+            Согласованная работа.
+          </h2>
           <div>
-            <p className="eyebrow">{item.type} · Архитектурная концепция</p>
-            <h1>{item.title}</h1>
+            <p>
+              Генеральный подряд — это организация всего согласованного объёма:
+              от разбора исходных данных до предъявления результата заказчику.
+            </p>
+            <p>
+              Для каждого объекта определяем состав работ, участников,
+              последовательность и порядок передачи документов. Обследование,
+              проектирование, ремонт и ПТО могут входить в единый комплекс либо
+              выполняться по отдельному заданию.
+            </p>
           </div>
-          <p>{item.subtitle}</p>
+        </div>
+        <ServiceRows />
+      </section>
+      <section className="surface section">
+        <div className="container">
+          <SectionHead
+            label="Порядок работы"
+            title="Понятные этапы"
+            text="Границы ответственности, сроки и состав результата закрепляются в договоре."
+          />
+          <Workflow />
         </div>
       </section>
-      <section className="container">
-        <ModelViewer model={item.model} />
-        <p className="caption">
-          Демонстрационная архитектурно-конструктивная модель. Не является
-          рабочим проектом или сведениями о выполненном объекте.
+      <CTA />
+    </>
+  );
+}
+function Service({ s }) {
+  return (
+    <>
+      <PageHead label={s.label} title={s.title} text={s.lead} />
+      <section className="container section compact">
+        <div className="intro-grid">
+          <h2>Состав работы</h2>
+          <p className="large-copy">{s.intro}</p>
+        </div>
+        <div className="detail-grid">
+          {s.tasks.map(([t, d]) => (
+            <article key={t}>
+              <h3>{t}</h3>
+              <p>{d}</p>
+            </article>
+          ))}
+        </div>
+        <p className="note">
+          Состав и объём участия определяются заданием и договором по
+          конкретному объекту.
         </p>
       </section>
-      <section className="section container project-story">
-        <div>
-          <p className="eyebrow">Идея проекта</p>
-          <h2>{item.subtitle}</h2>
-        </div>
-        <div>
-          <p className="page-lead">{item.description}</p>
-          {item.paragraphs.map((p) => (
-            <p key={p}>{p}</p>
-          ))}
+      <section className="surface section">
+        <div className="container">
+          <SectionHead
+            label="Практика компании"
+            title="Объекты и материалы"
+            link={["Все объекты", "/projects/"]}
+          />
+          <ProjectGrid limit={2} />
         </div>
       </section>
-      <section className="section-muted">
-        <div className="container project-features">
-          {item.features.map(([h, p]) => (
-            <div key={h}>
-              <p className="eyebrow">{h}</p>
-              <h3>{p}</h3>
+      <CTA />
+    </>
+  );
+}
+function Projects() {
+  return (
+    <>
+      <PageHead
+        label="Объекты и опыт"
+        title={
+          <>
+            Опыт в конкретных
+            <br />
+            объектах.
+          </>
+        }
+        text="Многоквартирные дома в Тюмени. Обследование и проектирование капитального ремонта крыш и фасадов."
+      />
+      <section className="container section compact">
+        <ProjectGrid />
+        <p className="note">
+          Карточки отражают указанный в материалах состав участия. Подготовка
+          проекта или обследования не означает завершение строительно-монтажных
+          работ.
+        </p>
+      </section>
+      <CTA />
+    </>
+  );
+}
+function Project({ p }) {
+  return (
+    <>
+      <PageHead label="Объекты и опыт" title={p.title} text={p.summary} />
+      <section className="container section compact">
+        {p.image && (
+          <figure className="case-photo">
+            <img
+              src={asset(p.image)}
+              alt={p.alt}
+              width={p.width || 1200}
+              height={p.height || 800}
+              style={{ maxWidth: p.width || 1200 }}
+            />
+            <figcaption>
+              Фотография из материалов технического обследования. Не является
+              фотографией результата капитального ремонта.
+            </figcaption>
+          </figure>
+        )}
+        <div className="case-grid">
+          <dl className="facts">
+            <div>
+              <dt>Местоположение</dt>
+              <dd>{p.location}</dd>
             </div>
-          ))}
+            <div>
+              <dt>Объект</dt>
+              <dd>Многоквартирный жилой дом</dd>
+            </div>
+            <div>
+              <dt>Направление</dt>
+              <dd>{p.category}</dd>
+            </div>
+            <div>
+              <dt>Состав участия</dt>
+              <dd>{p.scope}</dd>
+            </div>
+          </dl>
+          <div>
+            <p className="eyebrow">Работа по объекту</p>
+            <h2>
+              {p.heading || "От состояния здания — к решениям по ремонту."}
+            </h2>
+            <p>{p.description}</p>
+            <ul className="plain-list">
+              {p.details?.map((x) => (
+                <li key={x}>{x}</li>
+              ))}
+            </ul>
+            <p className="note">{p.evidenceNote}</p>
+          </div>
         </div>
+        <Link className="text-link" to="/projects/">
+          Все объекты
+          <Arrow />
+        </Link>
       </section>
-      <section className="section container">
-        <Heading label="Продолжить просмотр" title="Другие концепции" />
-        <div className="project-grid project-grid-two">
-          {concepts
-            .filter((c) => c.slug !== item.slug)
-            .map((c) => (
-              <ProjectCard key={c.slug} item={c} />
-            ))}
-        </div>
-      </section>
-      <CTA title="Каким будет ваш проект?" />
+      <CTA />
     </>
   );
 }
 function About() {
   return (
     <>
-      <section className="page-hero container">
-        <Breadcrumbs items={[["О компании"]]} />
-        <p className="eyebrow">ТСК ФОРТ</p>
-        <h1>
-          Строительство —<br />
-          это ответственность
-          <br />
-          <em>за целое.</em>
-        </h1>
-        <p className="page-lead">
-          ТСК ФОРТ — генподрядная строительная компания из Тюмени.
-          Проектирование, строительство и сопровождение объекта объединены в
-          один процесс с согласованными этапами и ответственностью.
-        </p>
-      </section>
-      <section className="about-band">
-        <div className="container about-band-inner">
-          <div className="about-wordmark" aria-hidden="true">
-            ФОРТ<span>Основа. Связь. Результат.</span>
+      <PageHead
+        label="О компании"
+        title={
+          <>
+            ТСК ФОРТ.
+            <br />
+            Строительная компания.
+          </>
+        }
+        text="Тюмень. Капитальный ремонт существующих зданий, генеральный подряд и техническое сопровождение работ."
+      />
+      <section className="section compact container">
+        <div className="intro-grid">
+          <h2>
+            Знаем работу
+            <br />с существующим зданием.
+          </h2>
+          <div>
+            <p className="large-copy">
+              В центре нашей деятельности — многоквартирные дома, их кровли и
+              фасады. Работа начинается с состояния конкретного объекта и
+              продолжается в проекте, на площадке и в документах.
+            </p>
+            <p>
+              Сочетаем производственные задачи с обследованием, проектной
+              подготовкой и ПТО. Для заказчика это возможность связать
+              технические решения и организацию работ в едином процессе.
+            </p>
+            <Link className="text-link" to="/documents/">
+              Реквизиты и документы
+              <Arrow />
+            </Link>
           </div>
-          <p>
-            Организуем работу вокруг объекта: от исходных данных и объёмов до
-            снабжения, производства и документации. Согласованность этих частей
-            определяет качество результата.
-          </p>
         </div>
-      </section>
-      <section className="section container">
-        <Heading
-          label="Профиль компании"
-          title="Собираем задачи в единую систему"
-        />
-        <div className="about-columns">
+        <div className="principles">
           {[
             [
-              "Строительство",
-              "Планирование этапов, организация площадки, координация участников и комплектование исполнительной документации.",
+              "Предметный подход",
+              "Отталкиваемся от состояния здания, исходных материалов и задачи заказчика.",
             ],
             [
-              "Сопровождение",
-              "ПТО, контроль качества, согласование изменений и исполнительная документация в составе генподрядных работ.",
+              "Определённый состав",
+              "Согласуем объёмы и ответственность до начала работ.",
             ],
             [
-              "Проектные решения",
-              "Подготовка и координация документации, увязка архитектуры, конструкций и инженерии с условиями объекта.",
+              "Связь с документами",
+              "Сопоставляем проектные решения, фактические объёмы и исполнительные материалы.",
             ],
-          ].map(([h, p]) => (
-            <div key={h}>
-              <h3>{h}</h3>
-              <p>{p}</p>
-            </div>
+          ].map(([t, d]) => (
+            <article key={t}>
+              <h3>{t}</h3>
+              <p>{d}</p>
+            </article>
           ))}
         </div>
       </section>
-      <section className="dark-section section">
+      <section className="surface section">
         <div className="container">
-          <Heading
-            dark
-            label="Принципы взаимодействия"
-            title="Профессионализм виден в работе"
+          <SectionHead
+            label="Практика"
+            title="Наш опыт — в объектах"
+            link={["Объекты и состав участия", "/projects/"]}
           />
-          <div className="principles">
-            {[
-              [
-                "Ясные договорённости",
-                "Объём, сроки, стоимость и границы ответственности определяются до начала работ.",
-              ],
-              [
-                "Последовательность",
-                "Производство опирается на подготовленные решения, ресурсы и доступный фронт.",
-              ],
-              [
-                "Прослеживаемость",
-                "Изменения, согласования и контрольные точки фиксируются в документах.",
-              ],
-              [
-                "Открытый диалог",
-                "Вопросы, влияющие на результат, выносятся на обсуждение с заказчиком.",
-              ],
-            ].map(([h, p]) => (
-              <div key={h}>
-                <h3>{h}</h3>
-                <p>{p}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-      <section className="section container about-contact">
-        <div>
-          <p className="eyebrow">Наша база</p>
-          <h2>Тюмень</h2>
-          <p>{company.address}</p>
-        </div>
-        <div>
-          <p>
-            Географию и формат участия в новом проекте обсуждаем индивидуально
-            после знакомства с задачей.
-          </p>
-          <ButtonLink to="/documents/" secondary>
-            Реквизиты компании
-          </ButtonLink>
+          <ProjectGrid limit={2} />
         </div>
       </section>
       <CTA />
@@ -986,388 +606,193 @@ function About() {
 function Approach() {
   return (
     <>
-      <section className="page-hero container">
-        <Breadcrumbs items={[["Как мы работаем"]]} />
-        <p className="eyebrow">Управление объектом</p>
-        <h1>
-          Все участники.
-          <br />
-          Один <em>план.</em>
-        </h1>
-        <p className="page-lead">
-          Каждый следующий этап опирается на подготовленный предыдущий. Так
-          решения переходят из задания в проект, а из проекта — на площадку.
-        </p>
-      </section>
-      <section className="section container approach-workflow">
+      <PageHead
+        label="Порядок работы"
+        title={
+          <>
+            От исходных данных
+            <br />
+            до передачи результата.
+          </>
+        }
+        text="Последовательность, которая связывает технические решения, производство и документацию."
+      />
+      <section className="section compact container">
         <Workflow />
-      </section>
-      <section className="section-muted section">
-        <div className="container">
-          <Heading label="Контроль по существу" title="Что видит заказчик" />
-          <div className="scope-grid">
-            {[
-              [
-                "Сроки",
-                "Плановые вехи, фактическое продвижение и причины отклонений.",
-              ],
-              [
-                "Объёмы",
-                "Выполненные работы, незавершённые участки и готовность к следующему этапу.",
-              ],
-              [
-                "Ресурсы",
-                "Обеспечение материалами, механизмы и последовательность поставок.",
-              ],
-              [
-                "Решения",
-                "Вопросы на согласование, влияние изменений и актуальная документация.",
-              ],
-              [
-                "Качество",
-                "Контрольные точки, замечания и результаты их устранения.",
-              ],
-              [
-                "Документы",
-                "Комплектность актов, схем и документов на применённые материалы.",
-              ],
-            ].map(([h, p]) => (
-              <article key={h}>
-                <h3>{h}</h3>
-                <p>{p}</p>
-              </article>
-            ))}
+        <div className="intro-grid with-top-rule">
+          <h2>Что важно на старте</h2>
+          <div>
+            <ul className="plain-list">
+              <li>Адрес, назначение и состояние объекта.</li>
+              <li>
+                Проект, обмеры, ведомость дефектов и имеющиеся фотографии.
+              </li>
+              <li>Предполагаемый состав работ и условия доступа.</li>
+              <li>Требования к срокам, согласованиям и передаче документов.</li>
+            </ul>
+            <p>
+              Если часть материалов отсутствует, сначала уточняем, какие данные
+              потребуются. Сроки и стоимость определяются после разбора задачи.
+            </p>
           </div>
         </div>
       </section>
       <CTA />
     </>
+  );
+}
+function CompanyDetails() {
+  return (
+    <dl className="facts">
+      <div>
+        <dt>Компания</dt>
+        <dd>ТСК ФОРТ</dd>
+      </div>
+      <div>
+        <dt>ИНН</dt>
+        <dd>{company.inn}</dd>
+      </div>
+      <div>
+        <dt>ОГРН</dt>
+        <dd>{company.ogrn}</dd>
+      </div>
+      <div>
+        <dt>Адрес офиса</dt>
+        <dd>{company.address}</dd>
+      </div>
+      <div>
+        <dt>Электронная почта</dt>
+        <dd>
+          <a href={"mailto:" + company.email}>{company.email}</a>
+        </dd>
+      </div>
+    </dl>
   );
 }
 function Documents() {
   return (
     <>
-      <section className="page-hero container">
-        <Breadcrumbs items={[["Документы"]]} />
-        <p className="eyebrow">Открытая информация</p>
-        <h1>
-          Документы
-          <br />и <em>реквизиты.</em>
-        </h1>
-        <p className="page-lead">
-          Данные компании для делового общения и подготовки договора. Документы
-          по конкретному объекту предоставляются в рамках обсуждения задачи.
-        </p>
-      </section>
-      <section className="container documents-layout">
-        <div className="company-card">
-          <p className="eyebrow">Карточка компании</p>
-          <h2>ТСК ФОРТ</h2>
-          <dl>
-            {[
-              ["ИНН", company.inn],
-              ["ОГРН", company.ogrn],
-              ["Адрес", company.address],
-              ["Телефон", company.phone],
-              ["Почта", company.email],
-            ].map(([k, v]) => (
-              <div key={k}>
-                <dt>{k}</dt>
-                <dd>{v}</dd>
-              </div>
-            ))}
-          </dl>
-          <a
-            className="button button-secondary"
-            href={asset("documents/company-card.txt")}
-            download
-          >
-            Скачать реквизиты
-            <Arrow />
-          </a>
-        </div>
-        <div className="document-notes">
-          <h2>Для начала сотрудничества</h2>
+      <PageHead
+        label="Реквизиты и документы"
+        title={
+          <>
+            Информация
+            <br />
+            для сотрудничества.
+          </>
+        }
+        text="Основные сведения о компании. Документы для проверки контрагента и конкретного объекта — по запросу."
+      />
+      <section className="section compact container intro-grid">
+        <CompanyDetails />
+        <div>
+          <h2>Запросить документы</h2>
           <p>
-            По запросу подготовим комплект документов компании и обсудим
-            требования заказчика к участникам работ. Состав подтверждений
-            определяется предметом договора.
+            Напишите, для какой задачи нужны документы: знакомство с компанией,
+            рассмотрение участия в работах или согласование договора.
           </p>
-          <h3>По конкретному объекту</h3>
-          <ul className="plain-list">
-            <li>Техническое задание и исходные материалы.</li>
-            <li>Состав работ и границы ответственности.</li>
-            <li>Календарный график и этапы приёмки.</li>
-            <li>Состав проектной и исполнительной документации.</li>
-          </ul>
+          <p>
+            Состав предоставляемого комплекта и актуальность сведений уточняются
+            при обращении. В открытом доступе не публикуем подписи, банковские
+            сведения и внутренние материалы по объектам.
+          </p>
           <a
-            className="text-link"
-            href={`mailto:${company.email}?subject=${encodeURIComponent("Запрос документов ТСК ФОРТ")}`}
+            className="button"
+            href={
+              "mailto:" +
+              company.email +
+              "?subject=" +
+              encodeURIComponent("Запрос документов ТСК ФОРТ")
+            }
           >
-            Запросить документы
+            Запросить по почте
             <Arrow />
           </a>
         </div>
       </section>
-      <section className="section container">
-        <Heading
-          label="Подготовка запроса"
-          title="Что прислать вместе с задачей"
-        />
-        <div className="scope-grid">
-          {[
-            [
-              "Проект или планы",
-              "Имеющиеся чертежи, назначение здания, площади и основные характеристики.",
-            ],
-            [
-              "Объёмы и состояние",
-              "Ведомость объёмов или дефектов, фотографии и результаты обследований.",
-            ],
-            [
-              "Условия производства",
-              "Местоположение, желаемые сроки, доступ на объект и ограничения.",
-            ],
-          ].map(([h, p]) => (
-            <article key={h}>
-              <h3>{h}</h3>
-              <p>{p}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-      <CTA />
     </>
   );
 }
 function Contacts() {
-  const [draft, setDraft] = useState(null);
-  function prepare(e) {
-    e.preventDefault();
-    const data = new FormData(e.currentTarget);
-    const body = `Здравствуйте!\n\nНаправление: ${data.get("service")}\nОбъект: ${data.get("object")}\nЗадача: ${data.get("task")}\n\nКонтактное лицо: ${data.get("name")}\nДля связи: ${data.get("contact")}`;
-    setDraft(
-      `mailto:${company.email}?subject=${encodeURIComponent("Обсуждение объекта — ТСК ФОРТ")}&body=${encodeURIComponent(body)}`,
-    );
+  const [copyStatus, setCopyStatus] = useState("");
+  async function copyEmail() {
+    try {
+      await navigator.clipboard.writeText(company.email);
+      setCopyStatus("Адрес скопирован");
+    } catch {
+      setCopyStatus(
+        "Не удалось скопировать. Выделите адрес почты выше и скопируйте его вручную.",
+      );
+    }
   }
   return (
     <>
-      <section className="page-hero container">
-        <Breadcrumbs items={[["Контакты"]]} />
-        <p className="eyebrow">Начнём знакомство</p>
-        <h1>
-          Большой результат
-          <br />
-          начинается с <em>разговора.</em>
-        </h1>
-      </section>
-      <section className="container contact-layout">
-        <div className="contact-information">
-          <a className="contact-big" href={`tel:${company.tel}`}>
+      <PageHead
+        label="Контакты"
+        title="Будем на связи."
+        text="Для знакомства с компанией, обсуждения объекта и взаимодействия по текущим работам."
+      />
+      <section className="container contact-layout section compact">
+        <div>
+          <p className="eyebrow">ТСК ФОРТ</p>
+          <a className="big-contact" href={"tel:" + company.tel}>
             {company.phone}
           </a>
-          <a className="contact-email" href={`mailto:${company.email}`}>
+          <a className="big-contact" href={"mailto:" + company.email}>
             {company.email}
           </a>
-          <div className="address-block">
-            <p className="eyebrow">Офис компании</p>
-            <address>{company.address}</address>
-            <a
-              className="text-link"
-              href={`https://yandex.ru/maps/?text=${encodeURIComponent(company.address)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Открыть на карте
-              <Arrow diagonal />
-            </a>
-          </div>
-          <div className="contact-tip">
-            <h2>Уже есть проект?</h2>
-            <p>
-              Отправьте его на почту с кратким описанием задачи. Укажите объект,
-              состав работ и желаемые сроки.
-            </p>
-            <Link className="text-link" to="/journal/brief/">
-              Как подготовить запрос
-              <Arrow />
-            </Link>
-          </div>
-        </div>
-        <form
-          className="brief-form"
-          onSubmit={prepare}
-          onChange={() => {
-            if (draft) setDraft(null);
-          }}
-        >
-          <p className="eyebrow">Подготовить обращение</p>
-          <h2>Расскажите о задаче</h2>
-          <div className="form-grid">
-            <label>
-              Ваше имя
-              <input
-                name="name"
-                autoComplete="name"
-                required
-                maxLength="120"
-                placeholder="Как к вам обращаться…"
-              />
-            </label>
-            <label>
-              Телефон или почта
-              <input
-                name="contact"
-                autoComplete="email"
-                required
-                maxLength="150"
-                placeholder="Контакт для ответа…"
-              />
-            </label>
-            <label className="full-width">
-              Направление
-              <select name="service" defaultValue="Генеральный подряд">
-                {services.map((s) => (
-                  <option key={s.slug}>{s.title}</option>
-                ))}
-              </select>
-            </label>
-            <label className="full-width">
-              Объект
-              <input
-                name="object"
-                required
-                maxLength="220"
-                placeholder="Назначение и местоположение…"
-              />
-            </label>
-            <label className="full-width">
-              Что необходимо сделать
-              <textarea
-                name="task"
-                rows="4"
-                required
-                maxLength="2000"
-                placeholder="Состав работ, сроки, имеющиеся материалы…"
-              />
-            </label>
-          </div>
-          <p className="form-note">
-            Подготовим текст письма. Вы сможете проверить его и приложить файлы
-            в своей почтовой программе.
-          </p>
-          <button className="button" type="submit">
-            Подготовить письмо
+          <button
+            className="text-link copy-email"
+            type="button"
+            onClick={copyEmail}
+          >
+            Скопировать почту
             <Arrow />
           </button>
-          {draft && (
-            <div className="draft-result" role="status">
-              <p>
-                Текст обращения подготовлен. Откройте письмо и отправьте его из
-                своей почты.
-              </p>
-              <a className="button button-light" href={draft}>
-                Открыть письмо
-                <Arrow />
-              </a>
-            </div>
-          )}
-          <p className="form-privacy">
-            Данные формы не отправляются автоматически.{" "}
-            <Link to="/privacy/">Конфиденциальность</Link>
+          <span className="copy-status" role="status">
+            {copyStatus}
+          </span>
+          <address>{company.address}</address>
+          <a
+            className="text-link"
+            href={
+              "https://yandex.ru/maps/?text=" +
+              encodeURIComponent(company.address)
+            }
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Посмотреть на карте
+            <Arrow />
+          </a>
+        </div>
+        <div className="contact-brief">
+          <p className="eyebrow">Для предметного разговора</p>
+          <h2>
+            Расскажите
+            <br />о задаче
+          </h2>
+          <p>
+            Укажите адрес объекта, состав необходимых работ и желаемые сроки.
+            Если есть проект, ведомость объёмов или фотографии — приложите их к
+            письму.
           </p>
-        </form>
-      </section>
-      <section className="section container contact-links">
-        <Link to="/documents/">
-          Реквизиты компании
-          <Arrow diagonal />
-        </Link>
-        <Link to="/approach/">
-          Как строится работа
-          <Arrow diagonal />
-        </Link>
-      </section>
-    </>
-  );
-}
-function Journal() {
-  return (
-    <>
-      <section className="page-hero container">
-        <Breadcrumbs items={[["Журнал"]]} />
-        <p className="eyebrow">Практика строительства</p>
-        <h1>
-          Полезно знать
-          <br />
-          <em>до начала работ.</em>
-        </h1>
-        <p className="page-lead">
-          Разбираем подготовку, проектирование и организацию ремонта. Материалы
-          для заказчиков, которые хотят принимать обоснованные решения.
-        </p>
-      </section>
-      <section className="container section-bottom">
-        <div className="article-grid">
-          {articles.map((a) => (
-            <ArticleCard key={a.slug} article={a} />
-          ))}
-        </div>
-      </section>
-      <CTA />
-    </>
-  );
-}
-function Article({ item }) {
-  return (
-    <>
-      <section className="page-hero container">
-        <Breadcrumbs items={[["Журнал", "/journal/"], [item.category]]} />
-        <div className="article-meta">
-          <span>{item.category}</span>
-          <span>{item.reading}</span>
-        </div>
-        <h1 className="article-title">{item.title}</h1>
-        <p className="page-lead">{item.lead}</p>
-      </section>
-      <div className="container article-layout">
-        <aside>
-          <p className="eyebrow">В этом материале</p>
-          {item.sections.map(([h], i) => (
-            <a key={h} href={`#part-${i}`}>
-              {h}
-            </a>
-          ))}
-          <ButtonLink to="/contacts/">Обсудить задачу</ButtonLink>
-        </aside>
-        <article className="article-body">
-          {item.sections.map(([h, p], i) => (
-            <section key={h} id={`part-${i}`}>
-              <h2>{h}</h2>
-              <p>{p}</p>
-            </section>
-          ))}
-          <div className="article-takeaway">
-            <h2>Начните с исходных данных</h2>
-            <p>
-              Направьте имеющиеся материалы в ТСК ФОРТ. Обсудим задачу и
-              определим, что необходимо уточнить для следующего шага.
-            </p>
-            <Link className="text-link" to="/contacts/">
-              Контакты компании
-              <Arrow />
-            </Link>
-          </div>
-        </article>
-      </div>
-      <section className="section container">
-        <Heading label="Ещё по теме" title="Продолжить чтение" />
-        <div className="article-grid">
-          {articles
-            .filter((a) => a.slug !== item.slug)
-            .map((a) => (
-              <ArticleCard key={a.slug} article={a} />
-            ))}
+          <a
+            className="button"
+            href={
+              "mailto:" +
+              company.email +
+              "?subject=" +
+              encodeURIComponent("Обращение в ТСК ФОРТ")
+            }
+          >
+            Открыть письмо
+            <Arrow />
+          </a>
+          <p className="note">
+            Ссылка откроет вашу почтовую программу. Письмо отправляется вами;
+            сайт не отправляет заявки автоматически.
+          </p>
         </div>
       </section>
     </>
@@ -1376,142 +801,81 @@ function Article({ item }) {
 function Privacy() {
   return (
     <>
-      <section className="page-hero container">
-        <Breadcrumbs items={[["Конфиденциальность"]]} />
-        <h1>Конфиденциальность</h1>
-        <p className="page-lead">
-          Как работает этот сайт и подготовка обращений.
+      <PageHead label="Информация о данных" title="Связь через сайт" />
+      <section className="container section compact prose">
+        <h2>Обращение по электронной почте</h2>
+        <p>
+          На сайте нет формы сбора заявок. Ссылки с адресом электронной почты
+          открывают вашу почтовую программу. Вы самостоятельно выбираете
+          содержание письма, вложения и отправляете их на адрес компании.
+        </p>
+        <h2>Данные в браузере</h2>
+        <p>
+          Сайт не устанавливает собственные аналитические cookie и не сохраняет
+          данные обращения в локальное хранилище. Кнопка копирования помещает
+          только адрес электронной почты компании в буфер обмена после нажатия.
+        </p>
+        <h2>Внешние сервисы</h2>
+        <p>
+          При переходе к карте или использовании почтовой программы применяются
+          правила соответствующего сервиса. Хостинг может обрабатывать
+          технические сведения о запросах в рамках своей работы.
+        </p>
+        <p>
+          Вопросы по обращению можно направить на{" "}
+          <a href={"mailto:" + company.email}>{company.email}</a>.
         </p>
       </section>
-      <article className="container privacy-body section-bottom">
-        <h2>Контактные данные компании</h2>
-        <p>
-          По вопросам работы сайта можно написать на {company.email} или
-          связаться по телефону {company.phone}. Реквизиты доступны в разделе
-          «Документы».
-        </p>
-        <h2>Форма подготовки письма</h2>
-        <p>
-          Введённые сведения используются в браузере для составления текста
-          письма. Форма не отправляет данные на сервер и не сохраняет их в
-          локальном хранилище. Отправка происходит только после вашего действия
-          в почтовой программе.
-        </p>
-        <h2>Ссылки на внешние сервисы</h2>
-        <p>
-          При переходе к карте или в почтовую программу применяются условия
-          выбранного сервиса. Само открытие этой страницы не загружает
-          встроенную карту.
-        </p>
-        <h2>Техническая работа сайта</h2>
-        <p>
-          Сайт размещён на GitHub Pages. При загрузке страниц и файлов хостинг
-          получает техническую информацию, необходимую для передачи содержимого,
-          в соответствии со своими условиями. Сайт не подключает рекламные
-          счётчики и не использует аналитические cookies.
-        </p>
-        <h2>Обращения</h2>
-        <p>
-          Не включайте в первоначальный запрос специальные категории
-          персональных данных или сведения, не относящиеся к объекту. Состав
-          документов для дальнейшей работы обсуждается индивидуально.
-        </p>
-      </article>
     </>
-  );
-}
-function NotFound() {
-  return (
-    <section className="page-hero container section-bottom">
-      <p className="eyebrow">404</p>
-      <h1>Страница не найдена</h1>
-      <p className="page-lead">
-        Перейдите на главную или выберите направление работ в меню.
-      </p>
-      <ButtonLink to="/">На главную</ButtonLink>
-    </section>
   );
 }
 function Content({ path }) {
   if (path === "/") return <Home />;
-  const service = services.find((s) => path === `/${s.slug}/`);
-  if (service) return <ServicePage service={service} />;
-  const concept = concepts.find((c) => path === `/projects/${c.slug}/`);
-  if (concept) return <ProjectPage item={concept} />;
-  const article = articles.find((a) => path === `/journal/${a.slug}/`);
-  if (article) return <Article item={article} />;
+  if (path === "/general-contracting/") return <General />;
+  const service = services.find((s) => path === "/" + s.slug + "/");
+  if (service) return <Service s={service} />;
+  const project = projects.find((p) => path === "/projects/" + p.slug + "/");
+  if (project) return <Project p={project} />;
   const pages = {
-    "/projects/": ProjectsPage,
+    "/projects/": Projects,
     "/about/": About,
     "/approach/": Approach,
     "/documents/": Documents,
     "/contacts/": Contacts,
-    "/journal/": Journal,
     "/privacy/": Privacy,
   };
-  const Page = pages[path] || NotFound;
-  return <Page />;
+  const Page = pages[path];
+  return Page ? (
+    <Page />
+  ) : (
+    <>
+      <PageHead
+        label="404"
+        title="Страница не найдена"
+        text="Возможно, адрес изменился. Перейдите к актуальной информации о компании."
+      />
+      <section className="container section compact">
+        <Button to="/">На главную</Button>
+      </section>
+    </>
+  );
+}
+function getPath() {
+  if (typeof window === "undefined") return "/";
+  let path = window.location.pathname;
+  if (path.startsWith(SITE_BASE)) path = "/" + path.slice(SITE_BASE.length);
+  path = path.replace(/index\.html$/, "");
+  return path.endsWith("/") ? path : path + "/";
 }
 export default function Site({ initialPath }) {
-  const [path, setPath] = useState(initialPath || currentPath);
-  useEffect(() => {
-    function navigate(e) {
-      const a = e.target.closest("a");
-      if (
-        !a ||
-        e.defaultPrevented ||
-        e.button !== 0 ||
-        e.metaKey ||
-        e.ctrlKey ||
-        e.shiftKey ||
-        e.altKey ||
-        a.target ||
-        a.hasAttribute("download")
-      )
-        return;
-      const url = new URL(a.href);
-      if (
-        url.origin !== location.origin ||
-        !url.pathname.startsWith(SITE_BASE) ||
-        /\.[a-z]+$/i.test(url.pathname)
-      )
-        return;
-      if (url.pathname === location.pathname && url.hash) return;
-      e.preventDefault();
-      history.pushState({}, "", url);
-      setPath(currentPath());
-      window.scrollTo({ top: 0, behavior: "instant" });
-      requestAnimationFrame(() =>
-        document.getElementById("main-content")?.focus({ preventScroll: true }),
-      );
-    }
-    function pop() {
-      setPath(currentPath());
-    }
-    document.addEventListener("click", navigate);
-    window.addEventListener("popstate", pop);
-    return () => {
-      document.removeEventListener("click", navigate);
-      window.removeEventListener("popstate", pop);
-    };
-  }, []);
-  useEffect(() => {
-    const meta = pageMeta[path] || ["Страница не найдена — ТСК ФОРТ", ""];
-    document.title = meta[0];
-    document
-      .querySelector('meta[name="description"]')
-      ?.setAttribute("content", meta[1]);
-    document
-      .querySelector('link[rel="canonical"]')
-      ?.setAttribute("href", `${SITE_URL}${path.slice(1)}`);
-  }, [path]);
+  const path = initialPath || getPath();
   return (
     <>
       <a className="skip-link" href="#main-content">
-        Перейти к содержанию
+        К содержанию
       </a>
       <Header path={path} />
-      <main id="main-content" key={path} tabIndex={-1}>
+      <main id="main-content" tabIndex="-1">
         <Content path={path} />
       </main>
       <Footer />

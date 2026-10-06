@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-hosting/
 .DS_Store
 qa/
 source-assets/*.png
